@@ -1,0 +1,30 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // adjust shadowDatabaseUrl if you run migrations in CI
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  image     String?  // profile picture URL
+  bio       String?
+  createdAt DateTime @default(now())
+  photos    Photo[]  @relation("UserPhotos")
+}
+
+model Photo {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  caption   String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], name: "UserPhotos")
+  userId    String
+}
