@@ -1,194 +1,137 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 
-type UserResult = {
+interface User {
   id: string;
   username: string;
-  email: string;
-};
+  image: string | null;
+}
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<UserResult[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const timerRef = useRef<number | null>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setQuery(value);
+
+    if (value.trim().length < 2) {
+      setUsers([]);
+    }
+  };
 
   useEffect(() => {
-    // Debounce: wait 400ms after user stops typing
-    if (timerRef.current) window.clearTimeout(timerRef.current);
-    if (!query.trim()) {
-      setResults([]);
+    if (query.trim().length < 2) return;
+
+    const fetchUsers = async () => {
+      setLoading(true);
+      const res = await fetch(`/api/search?q=${query}`);
+      const data = await res.json();
+      console.log("SEARCH RESULT:", data);
+      setUsers(data);
       setLoading(false);
-      setError(null);
-      return;
-    }
-
-    setLoading(true);
-    timerRef.current = window.setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `/api/search?username=${encodeURIComponent(query)}`
-        );
-
-        if (!res.ok) {
-          // try to read json error if available
-          const text = await res.text();
-          throw new Error(text || "Search failed");
-        }
-
-        // typed response
-        const body: { users?: UserResult[] } = await res.json();
-        setResults(body.users ?? []);
-        setError(null);
-      } catch (err: unknown) {
-        // Narrow unknown -> string safely
-        const message = err instanceof Error ? err.message : String(err);
-        console.error("Search error:", message);
-        setError(message || "Search error");
-      } finally {
-        setLoading(false);
-      }
-    }, 400);
-
-    return () => {
-      if (timerRef.current) window.clearTimeout(timerRef.current);
     };
+
+    fetchUsers();
   }, [query]);
 
   return (
-    // Changed: Reduced vertical padding on mobile (py-6) vs desktop (sm:py-12)
-    <div className="max-w-2xl mx-auto py-6 sm:py-12 px-4">
-      {/* Changed: Reduced card padding on mobile (p-4) vs desktop (sm:p-6) */}
-      <div className="bg-linear-to-br from-white to-slate-50 p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100">
-        <h1 className="text-xl sm:text-2xl font-semibold mb-4 text-slate-800 text-center">
-          Search users
-        </h1>
-
-        <div className="relative">
-          <label htmlFor="search" className="sr-only">
-            Search by username
-          </label>
-          <div className="flex items-center gap-3 bg-white border border-slate-100 rounded-xl p-2 shadow-sm">
-            <svg
-              className="w-5 h-5 text-slate-300 ml-2 shrink-0"
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden
-            >
-              <path
-                d="M21 21l-4.35-4.35"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <circle
-                cx="11"
-                cy="11"
-                r="6"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+    // 🔹 ADDED "w-full" here and kept "min-h-screen bg-black"
+    <div className="min-h-screen bg-white flex items-start justify-center pt-20 px-4">
+      <div className="w-full max-w-lg bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+        
+        {/* Header Section */}
+        <div className="p-6 border-b border-gray-100 bg-white">
+          <h1 className="text-xl font-bold text-gray-800 mb-4">Find People</h1>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg 
+                className={`w-5 h-5 transition-colors duration-200 ${loading ? 'text-blue-500' : 'text-gray-400'}`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
 
             <input
-              id="search"
+              type="text"
+              placeholder="Search by username..."
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by username"
-              className="flex-1 bg-transparent outline-none p-2 text-slate-700 placeholder-slate-400 min-w-0"
+              onChange={handleChange}
+              className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all placeholder:text-gray-400"
             />
-
-            <div className="pr-2 shrink-0">
-              {loading ? (
-                <span className="inline-flex items-center gap-2 text-sm text-slate-500">
-                  <svg
-                    className="w-4 h-4 animate-spin"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden
-                  >
-                    <path
-                      d="M12 2v4"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M12 18v4"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      opacity="0.25"
-                    />
-                    <path
-                      d="M4.93 4.93l2.83 2.83"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      opacity="0.6"
-                    />
-                  </svg>
-                  <span className="sr-only">Searching</span>
-                </span>
-              ) : (
-                <button
-                  onClick={() => setQuery("")}
-                  className="text-sm text-slate-400 hover:text-slate-600 transition"
-                  aria-label="Clear search"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
+            
+            {loading && (
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="mt-4">
-          {error && (
-            <div className="rounded-md bg-rose-50 border border-rose-100 p-3 text-rose-700 text-sm">
-              {error}
+        {/* Results Section */}
+        <div className="max-h-[60vh] overflow-y-auto">
+          {!loading && users.length === 0 && (
+            <div className="p-8 text-center text-gray-500">
+              {query.length < 2 ? (
+                <p className="text-sm">Type at least 2 characters to search</p>
+              ) : (
+                <p className="text-sm">No users found for &quot;{query}&quot;</p>
+              )}
             </div>
           )}
 
-          {!loading &&
-            results.length === 0 &&
-            query.trim().length > 0 &&
-            !error && (
-              <div className="mt-3 rounded-md bg-slate-50 border border-slate-100 p-4 text-slate-500 text-sm text-center">
-                No users found.
-              </div>
-            )}
+          {/* User List */}
+          {users.length > 0 && (
+            <div className="divide-y divide-gray-50">
+              {users.map((user) => (
+                <Link
+                  key={user.id}
+                  href={`/profile/${user.username}`}
+                  className="flex items-center gap-4 p-4 hover:bg-blue-50 transition-colors duration-200 group"
+                >
+                  <div className="relative shrink-0">
+                    {user.image ? (
+                      <Image
+                        src={user.image}
+                        alt={user.username}
+                        width={48}
+                        height={48}
+                        className="w-12 h-12 rounded-full object-cover border border-gray-200 group-hover:border-blue-200 transition-colors"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center border border-gray-200 group-hover:border-blue-200 transition-colors">
+                        <svg 
+                          className="w-6 h-6 text-gray-400" 
+                          fill="currentColor" 
+                          viewBox="0 0 20 20"
+                        >
+                          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
 
-          <div className="mt-3 space-y-3">
-            {results.map((u) => (
-              <Link
-                key={u.id}
-                href={`/profile/${encodeURIComponent(u.username)}`}
-                className="block p-3 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition"
-              >
-                <div className="flex items-center justify-between gap-4">
-                  {/* Added min-w-0 to allow truncation of long usernames */}
-                  <div className="min-w-0">
-                    <p className="font-medium text-slate-800 truncate">
-                      {u.username}
-                    </p>
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+                      @{user.username}
+                    </span>
+                    <span className="text-xs text-gray-400">View Profile</span>
                   </div>
-                  <div className="text-sm text-sky-600 font-medium shrink-0">
-                    View
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+                  
+                  <svg className="w-5 h-5 text-gray-300 ml-auto group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

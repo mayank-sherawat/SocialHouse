@@ -1,37 +1,41 @@
-// app/api/search/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const q = searchParams.get("username")?.trim();
+    const session = await getServerSession(authOptions);
 
-    if (!q || q.length === 0) {
-      return NextResponse.json({ users: [] });
+    const { searchParams } = new URL(req.url);
+    const q = searchParams.get("q")?.trim();
+
+    if (!q || q.length < 2) {
+      return NextResponse.json([]);
     }
 
-    // Simple case-insensitive "contains" search, limit results to 20
     const users = await prisma.user.findMany({
       where: {
         username: {
           contains: q,
           mode: "insensitive",
         },
+        // 🚫 exclude logged-in user
+        NOT: session?.user?.id
+          ? { id: session.user.id }
+          : undefined,
       },
       select: {
         id: true,
         username: true,
-        email: true,
-        createdAt: true,
+        image: true,
       },
-      take: 20,
-      orderBy: { username: "asc" },
+      take: 10,
     });
 
-    return NextResponse.json({ users });
-  } catch (err) {
-    console.error("Search error:", err);
-    return NextResponse.json({ error: "Search failed" }, { status: 500 });
+    return NextResponse.json(users);
+  } catch (error) {
+    console.error("Search error:", error);
+    return NextResponse.json([], { status: 500 });
   }
 }
