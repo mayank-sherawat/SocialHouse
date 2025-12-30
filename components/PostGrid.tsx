@@ -29,7 +29,7 @@ export default function PostGrid({ photos }: { photos: Photo[] }) {
                 alt={photo.caption || "Post"}
                 fill
                 className="object-cover transition-opacity duration-300 group-hover:opacity-90"
-                unoptimized
+                
               />
             </div>
             
@@ -69,7 +69,7 @@ export default function PostGrid({ photos }: { photos: Photo[] }) {
                 width={1200}
                 height={1200}
                 className="object-contain w-auto h-auto max-h-[70vh] sm:max-h-[80vh]"
-                unoptimized
+                
               />
             </div>
             

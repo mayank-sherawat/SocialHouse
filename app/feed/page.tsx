@@ -79,7 +79,7 @@ export default async function FeedPage() {
                           alt={`${photo.user.username}'s profile`}
                           fill
                           className="object-cover group-hover:opacity-90 transition-opacity"
-                          unoptimized
+                          
                         />
                       ) : (
                         /* Fallback Avatar Icon */
@@ -120,7 +120,7 @@ export default async function FeedPage() {
                     width={1000}
                     height={1000}
                     className="w-full h-auto object-cover max-h-[700px]"
-                    unoptimized
+                    
                   />
                 </div>
 

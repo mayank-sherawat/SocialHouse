@@ -23,7 +23,7 @@ type Me = {
   email: string;
   image?: string | null;
   _count?: {
-    
+
     followers: number;
     following: number;
   };
@@ -135,14 +135,14 @@ export default function ProfilePage() {
             <div className="relative flex flex-col sm:flex-row items-center sm:items-end -mt-16 sm:-mt-20 gap-4 sm:gap-8">
               {/* Avatar */}
               <div className="relative shrink-0 z-10">
-                <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full ring-4 ring-white overflow-hidden bg-white shadow-lg border border-zinc-100">
+                <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full ring-4 ring-white overflow-hidden bg-white shadow-lg border border-zinc-100">
                   {me?.image ? (
                     <Image
                       src={me.image}
                       alt="Profile"
                       fill
-                      className="object-cover"
-                      unoptimized
+                      className="object-cover rounded-full"
+                      
                     />
                   ) : (
                     <div className="flex items-center justify-center w-full h-full text-zinc-300 bg-zinc-50">
@@ -157,7 +157,7 @@ export default function ProfilePage() {
               {/* User Details */}
               <div className="flex-1 text-center sm:text-left mt-2 sm:mt-0 sm:mb-2 w-full">
                 <h1 className="text-2xl sm:text-4xl font-extrabold text-zinc-900 tracking-tight">
-                  @{me?.username ?? session.user.username}
+                  {me?.username ?? session.user.username}
                 </h1>
                 <p className="text-zinc-500 font-medium text-base sm:text-lg mt-1">
                   {me?.email ?? session.user.email}
@@ -321,7 +321,7 @@ export default function ProfilePage() {
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                     alt={p.caption ?? "photo"}
-                    unoptimized
+                    
                   />
 
                   {/* Overlay */}
@@ -343,37 +343,48 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* --- RESPONSIVE LIGHTBOX MODAL --- */}
+  {/* --- RESPONSIVE LIGHTBOX MODAL --- */}
       {selectedPhoto && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 sm:p-6 backdrop-blur-md"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-0 sm:p-6 backdrop-blur-md"
           onClick={() => setSelectedPhoto(null)}
         >
           {/* Close Button */}
           <button className="absolute top-4 right-4 sm:top-6 sm:right-6 text-white/70 hover:text-white p-2 z-50 transition-colors bg-black/20 rounded-full">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-8 h-8">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2.5}
+              stroke="currentColor"
+              className="w-8 h-8"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
 
           <div
-            className="bg-white rounded-3xl overflow-hidden shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col md:flex-row"
+            className="bg-white rounded-none sm:rounded-3xl overflow-hidden shadow-2xl w-full h-full sm:h-auto sm:max-w-5xl sm:max-h-[90vh] flex flex-col md:flex-row"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Image Area - Responsive Height */}
-            <div className="relative w-full md:w-2/3 h-[40vh] md:h-auto bg-zinc-100 flex items-center justify-center p-4 border-b md:border-b-0 md:border-r border-zinc-100">
+            {/* Image Area */}
+            <div className="relative w-full md:w-2/3 h-[50vh] md:h-auto bg-zinc-100 flex items-center justify-center p-4 border-b md:border-b-0 md:border-r border-zinc-100">
               <Image
                 src={selectedPhoto.imageUrl}
                 alt="Enlarged view"
                 width={1200}
                 height={1200}
                 className="object-contain w-full h-full max-h-[85vh] rounded-lg"
-                unoptimized
+                
               />
             </div>
 
-            {/* Details Area */}
-            <div className="w-full md:w-1/3 flex flex-col p-6 sm:p-8 bg-white h-auto md:h-full overflow-y-auto">
+            {/* Details Area - Added pb-24 to fix cut-off content */}
+            <div className="w-full md:w-1/3 flex flex-col p-6 sm:p-8 bg-white h-auto md:h-full overflow-y-auto pb-32">
               {/* Modal User Info */}
               <div className="flex items-center gap-3 mb-6 border-b border-zinc-100 pb-6 shrink-0">
                 <div className="relative w-12 h-12 rounded-full overflow-hidden bg-zinc-100 border border-zinc-200">
@@ -383,10 +394,9 @@ export default function ProfilePage() {
                       fill
                       className="object-cover"
                       alt="User"
-                      unoptimized
+                      
                     />
                   ) : (
-                    /* Default Male Avatar Icon */
                     <div className="flex items-center justify-center w-full h-full text-zinc-400">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -405,20 +415,24 @@ export default function ProfilePage() {
                 </div>
                 <div>
                   <span className="block font-bold text-zinc-900 text-base">
-                    @{me?.username}
+                    {me?.username}
                   </span>
                 </div>
               </div>
 
               {/* Caption */}
-              <div className="flex-1 min-h-[100px]">
-                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">Caption</h4>
+              <div className="flex-1 min-h-[50px]">
+                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">
+                  Caption
+                </h4>
                 {selectedPhoto.caption ? (
                   <p className="text-zinc-800 text-base leading-relaxed font-medium">
                     {selectedPhoto.caption}
                   </p>
                 ) : (
-                  <p className="text-zinc-400 text-sm italic">No caption provided.</p>
+                  <p className="text-zinc-400 text-sm italic">
+                    No caption provided.
+                  </p>
                 )}
               </div>
 

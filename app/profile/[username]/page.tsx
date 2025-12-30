@@ -53,14 +53,14 @@ export default async function UserProfilePage({ params }: PageProps) {
           
           {/* Avatar Section */}
           <div className="shrink-0">
-            <div className="relative w-24 h-24 sm:w-36 sm:h-36 rounded-full overflow-hidden border border-gray-200 shadow-sm ring-2 ring-white">
+            <div className="relative w-24 h-24 sm:w-36 sm:h-36 rounded-full overflow-hidden border-gray-200 shadow-sm ring-2 ring-white">
               {user.image ? (
                 <Image
                   src={user.image}
                   alt={user.username}
                   fill
                   className="object-cover"
-                  unoptimized
+                  
                 />
               ) : (
                 <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
