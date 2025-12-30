@@ -18,6 +18,12 @@ export async function GET() {
         username: true,
         email: true,
         image: true, // profile image URL
+        _count: {
+        select: {
+          followers: true,
+          following: true,
+        },
+      },
       },
     });
 
