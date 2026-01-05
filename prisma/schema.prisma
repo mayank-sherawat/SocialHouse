@@ -27,6 +27,7 @@ model Photo {
   id        String   @id @default(cuid())
   imageUrl  String
   caption   String?
+  publicId  String?
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], name: "UserPhotos")
   userId    String

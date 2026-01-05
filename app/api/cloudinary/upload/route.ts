@@ -31,14 +31,15 @@ export async function POST(req: Request) {
     const base64 = `data:${file.type};base64,${buffer.toString("base64")}`;
 
     // Upload to Cloudinary
-    const upload = await cloudinary.uploader.upload(base64, {
+    const uploadResult = await cloudinary.uploader.upload(base64, {
       folder: "social-house",
     });
 
     // Save in Prisma
     const photo = await prisma.photo.create({
       data: {
-        imageUrl: upload.secure_url,
+        imageUrl: uploadResult.secure_url,
+        publicId: uploadResult.public_id,
         caption,
         userId: session.user.id,
       },
