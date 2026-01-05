@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: "SocialHouse — A minimal social app to share photos, follow friends, and explore content.",
   
   // Base URL for all relative paths (images, etc.)
-  metadataBase: new URL("https://socialhouse-tau.vercel.app"),
+  metadataBase: new URL("https://www.socialhouse.online"),
 
   // 1. Browser Tab & Mobile Icons (Added this section)
   icons: {
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "SocialHouse",
     description: "Share photos, follow friends and enjoy a minimal social experience.",
-    url: "https://socialhouse-tau.vercel.app",
+    url: "https://www.socialhouse.online",
     siteName: "SocialHouse",
     images: [
       {
