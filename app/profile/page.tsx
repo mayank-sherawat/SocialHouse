@@ -255,7 +255,7 @@ export default function ProfilePage() {
               {/* Sign Out Button */}
               <div className="w-full sm:w-auto mt-4 sm:mt-0 sm:mb-4">
                 <button
-                  onClick={() => signOut({ callbackUrl: "/auth" })}
+                  onClick={() => signOut({ callbackUrl: "/login" })}
                   className="w-full sm:w-auto px-8 py-3.5 text-base font-bold text-white bg-red-600 hover:bg-red-700 rounded-2xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">

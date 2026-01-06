@@ -20,6 +20,10 @@ export const authOptions: AuthOptions = {
 
         if (!user) return null;
 
+        if (!user.emailVerified) {
+          throw new Error("Please verify your email before logging in");
+        }
+
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) return null;
 
@@ -32,9 +36,11 @@ export const authOptions: AuthOptions = {
     }),
   ],
 
+
+
   session: { strategy: "jwt" },
 
-  pages: { signIn: "/auth" },
+  pages: { signIn: "/login" },
 
   secret: process.env.NEXTAUTH_SECRET,
 

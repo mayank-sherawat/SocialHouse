@@ -15,7 +15,7 @@ interface PageProps {
 
 export default async function UserProfilePage({ params }: PageProps) {
   const session = await getServerSession(authOptions);
-  if (!session) redirect("/auth");
+  if (!session) redirect("/login");
 
   const { username } = await params;
 

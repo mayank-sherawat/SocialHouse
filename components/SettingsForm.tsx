@@ -12,7 +12,7 @@ type Props = {
 
 export default function SettingsForm({ user }: Props) {
   const [username, setUsername] = useState(user.username);
-  const [email, setEmail] = useState(user.email);
+  const [email,] = useState(user.email);
   const [bio, setBio] = useState(user.bio ?? "");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -60,22 +60,21 @@ export default function SettingsForm({ user }: Props) {
 
       {/* Email Input */}
       <div className="space-y-2">
-        <label className="text-sm font-semibold text-zinc-900 ml-1">Email</label>
-        <div className="relative group">
-           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400 group-focus-within:text-zinc-800 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-              <path d="M1.5 8.67v8.58a3 3 0 003 3h15a3 3 0 003-3V8.67l-8.928 5.493a3 3 0 01-3.144 0L1.5 8.67z" />
-              <path d="M22.5 6.908V6.75a3 3 0 00-3-3h-15a3 3 0 00-3 3v.158l9.714 5.978a1.5 1.5 0 001.572 0L22.5 6.908z" />
-            </svg>
-          </div>
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-zinc-100 focus:border-zinc-400 transition-all text-sm sm:text-base text-zinc-900 font-medium"
-            placeholder="john@example.com"
-          />
-        </div>
-      </div>
+  <label className="text-sm font-semibold text-zinc-900 ml-1">Email</label>
+  <div className="relative group">
+    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+        <path d="M1.5 8.67v8.58a3 3 0 003 3h15a3 3 0 003-3V8.67l-8.928 5.493a3 3 0 01-3.144 0L1.5 8.67z" />
+        <path d="M22.5 6.908V6.75a3 3 0 00-3-3h-15a3 3 0 00-3 3v.158l9.714 5.978a1.5 1.5 0 001.572 0L22.5 6.908z" />
+      </svg>
+    </div>
+    <input
+      value={email}
+      readOnly
+      className="w-full pl-10 pr-4 py-3 bg-zinc-100 border border-zinc-200 rounded-xl focus:outline-none cursor-default text-sm sm:text-base text-zinc-500 font-medium"
+    />
+  </div>
+</div>
 
       {/* Bio Input */}
       <div className="space-y-2">

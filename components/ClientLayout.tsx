@@ -20,7 +20,7 @@ interface NavLinkProps {
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "/";
-  const hideNavbar = pathname.startsWith("/auth");
+  const hideNavbar = pathname.startsWith("/login") || pathname.startsWith("/register");
 
   const isActive = (p: string) => pathname === p || pathname.startsWith(p + "/");
 

@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions);
-  if (!session) redirect("/auth");
+  if (!session) redirect("/login");
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -21,7 +21,7 @@ export default async function SettingsPage() {
     },
   });
 
-  if (!user) redirect("/auth");
+  if (!user) redirect("/login");
 
   return (
     <div className={`min-h-screen bg-zinc-50/50 pb-32 ${inter.className}`}>

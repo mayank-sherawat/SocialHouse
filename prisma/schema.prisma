@@ -19,6 +19,8 @@ model User {
   createdAt DateTime @default(now())
   photos    Photo[]  @relation("UserPhotos")
 
+  emailVerified Boolean  @default(false)
+
   followers Follow[] @relation("Following")
   following Follow[] @relation("Follower")
 }
@@ -46,3 +48,22 @@ model Follow {
 
   @@unique([followerId, followingId])
 }
+
+model EmailOTP {
+  id        String   @id @default(cuid())
+  email     String
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  email     String
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+

@@ -15,7 +15,7 @@ function formatDate(date: Date) {
 
 export default async function FeedPage() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect("/auth");
+  if (!session?.user?.id) redirect("/login");
 
   const photos = await prisma.photo.findMany({
     where: {
