@@ -14,16 +14,32 @@ export default function LoginPage() {
 
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false); // <--- Add this
 
   const handleLogin = async () => {
-    const res = await signIn("credentials", {
-      redirect: false,
-      email: form.email,
-      password: form.password,
-    });
+    if (!form.email || !form.password) return alert("Please fill in all fields");
 
-    if (res?.ok) router.push("/feed");
-    else alert("Invalid credentials");
+    setLoading(true); // <--- Start loading
+
+    try {
+      const res = await signIn("credentials", {
+        redirect: false,
+        email: form.email,
+        password: form.password,
+      });
+
+      if (res?.ok) {
+        router.push("/feed");
+        // Don't stop loading here to prevent button flashing before redirect
+      } else {
+        alert("Invalid credentials");
+        setLoading(false); // <--- Stop loading on error
+      }
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+      alert("Something went wrong");
+    }
   };
 
   return (
@@ -44,8 +60,8 @@ export default function LoginPage() {
           <Image
             src="/logo.png"
             alt="Socials"
-            width={220}
-            height={56}
+            width={290}
+            height={150}
             priority
           />
         </div>
@@ -103,10 +119,35 @@ export default function LoginPage() {
               </div>
 
               <button
-                className="w-full py-2.5 rounded-lg bg-black text-white font-medium mb-3"
+                className="w-full py-2.5 rounded-lg bg-black text-white font-medium mb-3 flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
                 onClick={handleLogin}
+                disabled={loading}
               >
-                Sign In
+                {loading ? (
+                  /* Loading Spinner SVG */
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                ) : (
+                  "Sign In"
+                )}
               </button>
 
               <div className="flex items-center gap-2 mb-3">
