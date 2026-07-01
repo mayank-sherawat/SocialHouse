@@ -1,30 +1,21 @@
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { apiError, apiSuccess, handleRoute } from "@/lib/api";
 
-export async function GET(
-  _: Request,
-  // 1. FIX: Type 'params' as a Promise
-  { params }: { params: Promise<{ username: string }> }
-) {
-  // 2. FIX: Await the params to get the data
-  const { username } = await params;
+export const GET = handleRoute(
+  async (_req: Request, { params }: { params: Promise<{ username: string }> }) => {
+    const { username } = await params;
 
-  const user = await prisma.user.findUnique({
-    where: { username }, // Use the awaited username
-    select: {
-      _count: {
-        select: {
-          followers: true,
-          following: true,
-          photos: true,
+    const user = await prisma.user.findUnique({
+      where: { username },
+      select: {
+        _count: {
+          select: { followers: true, following: true, photos: true },
         },
       },
-    },
-  });
+    });
 
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (!user) return apiError("User not found", 404);
+
+    return apiSuccess(user._count);
   }
-
-  return NextResponse.json(user._count);
-}
+);

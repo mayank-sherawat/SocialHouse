@@ -4,12 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { Inter } from "next/font/google";
 
-// Use Inter font for a modern look
-const inter = Inter({ subsets: ["latin"] });
-
-// --- TYPESCRIPT FIX: Define proper interface ---
 interface NavLinkProps {
   href: string;
   active: boolean;
@@ -38,7 +33,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   }, []);
 
   return (
-    <div className={`min-h-screen bg-zinc-50 ${inter.className}`}>
+    <div className="min-h-screen bg-zinc-50">
       
       {/* --- MOBILE TOP HEADER --- */}
       {!hideNavbar && (

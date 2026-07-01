@@ -1,12 +1,8 @@
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import SettingsForm from "@/components/SettingsForm";
-import { Inter } from "next/font/google";
-
-// Ensure consistent font usage
-const inter = Inter({ subsets: ["latin"] });
 
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions);
@@ -24,7 +20,7 @@ export default async function SettingsPage() {
   if (!user) redirect("/login");
 
   return (
-    <div className={`min-h-screen bg-zinc-50/50 pb-32 ${inter.className}`}>
+    <div className="min-h-screen bg-zinc-50/50 pb-32">
       {/* Decorative Header Background */}
       <div className="h-48 bg-zinc-900 w-full relative overflow-hidden">
         <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#ffffff_1px,transparent_1px)] background-size:[16px_16px]"></div>

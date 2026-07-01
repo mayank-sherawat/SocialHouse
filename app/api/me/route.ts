@@ -1,37 +1,23 @@
-// app/api/me/route.ts
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { apiError, apiSuccess, handleRoute, requireUser } from "@/lib/api";
 
-export async function GET() {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+export const GET = handleRoute(async () => {
+  const sessionUser = await requireUser();
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        image: true, // profile image URL
-        _count: {
-        select: {
-          followers: true,
-          following: true,
-        },
+  const user = await prisma.user.findUnique({
+    where: { id: sessionUser.id },
+    select: {
+      id: true,
+      username: true,
+      email: true,
+      image: true,
+      _count: {
+        select: { followers: true, following: true },
       },
-      },
-    });
+    },
+  });
 
-    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+  if (!user) return apiError("User not found", 404);
 
-    return NextResponse.json(user);
-  } catch (err) {
-    console.error("GET /api/me error:", err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
-  }
-}
+  return apiSuccess(user);
+});

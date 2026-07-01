@@ -1,8 +1,12 @@
-import type { } from "next";
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 import ClientLayout from "@/components/ClientLayout";
 import NextAuthSessionProvider from "./providers/SessionProvider";
+
+// Loaded once for the whole app (previously duplicated in several components).
+const inter = Inter({ subsets: ["latin"] });
 
 
 export const metadata: Metadata = {
@@ -49,10 +53,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-gray-50">
+      <body className={`min-h-screen bg-gray-50 ${inter.className}`}>
         <NextAuthSessionProvider>
           <ClientLayout>{children}</ClientLayout>
         </NextAuthSessionProvider>
+        <Toaster richColors position="top-center" />
       </body>
     </html>
   );

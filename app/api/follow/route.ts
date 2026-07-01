@@ -1,26 +1,29 @@
-import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { apiSuccess, handleRoute, HttpError, parseBody, requireUser } from "@/lib/api";
+import { followSchema } from "@/lib/validations";
 
-export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const POST = handleRoute(async (req: Request) => {
+  const user = await requireUser();
+  const { userId } = await parseBody(req, followSchema);
+
+  if (userId === user.id) {
+    throw new HttpError(400, "You cannot follow yourself.");
   }
 
-  const { userId } = await req.json();
-
-  if (userId === session.user.id) {
-    return NextResponse.json({ error: "Cannot follow yourself" }, { status: 400 });
+  try {
+    await prisma.follow.create({
+      data: { followerId: user.id, followingId: userId },
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      // Already following -> idempotent success.
+      if (err.code === "P2002") return apiSuccess({ success: true });
+      // Target user does not exist.
+      if (err.code === "P2003") throw new HttpError(404, "User not found.");
+    }
+    throw err;
   }
 
-  await prisma.follow.create({
-    data: {
-      followerId: session.user.id,
-      followingId: userId,
-    },
-  });
-
-  return NextResponse.json({ success: true });
-}
+  return apiSuccess({ success: true });
+});

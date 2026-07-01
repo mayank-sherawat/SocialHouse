@@ -1,199 +1,70 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
-import { Inter } from "next/font/google";
-import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
-
-// Initialize font
-const inter = Inter({ subsets: ["latin"] });
-
-type Photo = {
-  id: string;
-  imageUrl: string;
-  caption?: string | null;
-  createdAt?: string;
-  userId?: string;
-};
-
-type Me = {
-  id: string;
-  username: string;
-  email: string;
-  image?: string | null;
-  _count?: {
-    followers: number;
-    following: number;
-  };
-};
+import { toast } from "sonner";
+import type { Photo } from "@/types/models";
+import PhotoLightbox from "@/components/PhotoLightbox";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { cldOptimized } from "@/lib/cloudinary-url";
+import { useProfile } from "./useProfile";
 
 export default function ProfilePage() {
   const { data: session } = useSession();
-  const [me, setMe] = useState<Me | null>(null);
+  const {
+    me,
+    photos,
+    isLoading,
+    isUploadingAvatar,
+    isUploadingPost,
+    isDeleting,
+    uploadAvatar,
+    uploadPost,
+    deletePhoto,
+  } = useProfile(session?.user?.id);
 
+  // UI-only state.
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [postFile, setPostFile] = useState<File | null>(null);
-
-  // --- NEW STATE FOR LOADING BUTTONS ---
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [isUploadingPost, setIsUploadingPost] = useState(false);
-
   const [caption, setCaption] = useState("");
-  const [photos, setPhotos] = useState<Photo[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
-
-  const formatDateTime = (dateString?: string) => {
-    if (!dateString) return "";
-    return new Date(dateString).toLocaleString(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
-  };
-
   const [deletePhotoId, setDeletePhotoId] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
-
-  useEffect(() => {
-    if (!session?.user?.id) return;
-
-    (async () => {
-      try {
-        const res = await fetch("/api/me");
-        if (res.ok) setMe(await res.json());
-      } catch (err) {
-        console.error(err);
-      }
-    })();
-
-    (async () => {
-      try {
-        const res = await fetch(
-          `/api/photos?userId=${encodeURIComponent(session.user.id)}`
-        );
-        if (res.ok) setPhotos(await res.json());
-      } catch (err) {
-        console.error(err);
-      }
-    })();
-  }, [session?.user?.id]);
-
-  if (!session)
+  if (!session) {
     return (
-      <div className={`flex min-h-screen items-center justify-center bg-zinc-50 ${inter.className}`}>
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50">
         <p className="text-zinc-400">Please log in.</p>
       </div>
     );
+  }
 
-  const handleProfilePicUpload = async () => {
-    if (!avatarFile) return alert("Select an image");
-    
-    // Start Loading
-    setIsUploadingAvatar(true);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", avatarFile);
-  
-      const res = await fetch("/api/profile/uploadImage", {
-        method: "POST",
-        body: formData,
-      });
-  
-      if (res.ok) {
-        const fresh = await fetch("/api/me");
-        if (fresh.ok) setMe(await fresh.json());
-        alert("Profile picture updated!");
-        setAvatarFile(null);
-      } else {
-        alert("Failed to upload");
-      }
-    } catch (error) {
-      console.error(error);
-      alert("An error occurred during upload.");
-    } finally {
-      // Stop Loading
-      setIsUploadingAvatar(false);
-    }
+  const handleAvatarUpload = async () => {
+    if (!avatarFile) return toast.error("Select an image first");
+    if (await uploadAvatar(avatarFile)) setAvatarFile(null);
   };
 
-  const handleUploadPhoto = async () => {
-    if (!postFile) return alert("Select a file");
-    
-    // Start Loading
-    setIsUploadingPost(true);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", postFile);
-      formData.append("caption", caption);
-  
-      const res = await fetch("/api/cloudinary/upload", {
-        method: "POST",
-        body: formData,
-      });
-  
-      if (res.ok) {
-        const created = await res.json();
-        setPhotos((p) => [created, ...p]);
-        setCaption("");
-        setPostFile(null);
-      } else {
-        alert("Upload failed");
-      }
-    } catch (error) {
-      console.error(error);
-      alert("An error occurred during upload.");
-    } finally {
-      // Stop Loading
-      setIsUploadingPost(false);
+  const handlePostUpload = async () => {
+    if (!postFile) return toast.error("Select a file first");
+    if (await uploadPost(postFile, caption)) {
+      setCaption("");
+      setPostFile(null);
     }
   };
 
   const handleDelete = async () => {
     if (!deletePhotoId) return;
-
-    try {
-      setIsDeleting(true);
-
-      const res = await fetch(
-        `/api/photos/${deletePhotoId}/delete`, 
-        { method: "DELETE" }
-      );
-
-      if (!res.ok) {
-        const errorText = await res.text(); 
-        console.error(`Delete failed. Status: ${res.status} ${res.statusText}`);
-        console.error("Server Response:", errorText);
-        
-        alert(`Failed to delete. Error: ${res.status} ${res.statusText}`);
-        return;
-      }
-
-      setPhotos((prev) => prev.filter(p => p.id !== deletePhotoId));
-      
-      if (selectedPhoto?.id === deletePhotoId) {
-        setSelectedPhoto(null);
-      }
-      
+    if (await deletePhoto(deletePhotoId)) {
+      if (selectedPhoto?.id === deletePhotoId) setSelectedPhoto(null);
       setDeletePhotoId(null);
-    } catch (error) {
-      console.error("Delete network error:", error);
-      alert("An unexpected error occurred.");
-    } finally {
-      setIsDeleting(false);
     }
   };
 
-
   return (
-    <div className={`min-h-screen bg-zinc-50/50 pt-6 px-4 pb-32 sm:py-10 sm:px-6 ${inter.className}`}>
+    <div className="min-h-screen bg-zinc-50/50 pt-6 px-4 pb-32 sm:py-10 sm:px-6">
       <div className="max-w-6xl mx-auto space-y-8">
-
         {/* --- HEADER CARD --- */}
         <div className="bg-white rounded-3xl shadow-sm border border-zinc-200 overflow-hidden">
-          {/* Cover Image */}
           <div className="h-25 sm:h-30 bg-teal-100 relative">
             <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] background-size:[16px_16px]"></div>
           </div>
@@ -204,13 +75,7 @@ export default function ProfilePage() {
               <div className="relative shrink-0 z-10">
                 <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full ring-4 ring-white overflow-hidden bg-white shadow-lg border border-zinc-100">
                   {me?.image ? (
-                    <Image
-                      src={me.image}
-                      alt="Profile"
-                      fill
-                      className="object-cover rounded-full"
-
-                    />
+                    <Image src={me.image} alt="Profile" fill className="object-cover rounded-full" />
                   ) : (
                     <div className="flex items-center justify-center w-full h-full text-zinc-300 bg-zinc-50">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-16 h-16">
@@ -230,29 +95,19 @@ export default function ProfilePage() {
                   {me?.email ?? session.user.email}
                 </p>
 
-                {/* Followers/Following */}
                 <div className="flex items-center justify-center sm:justify-start gap-6 mt-4">
                   <div className="flex flex-col sm:items-start items-center">
-                    <span className="text-lg font-bold text-zinc-900">
-                      {me?._count?.followers ?? 0}
-                    </span>
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
-                      Followers
-                    </span>
+                    <span className="text-lg font-bold text-zinc-900">{me?._count?.followers ?? 0}</span>
+                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Followers</span>
                   </div>
                   <div className="flex flex-col sm:items-start items-center">
-                    <span className="text-lg font-bold text-zinc-900">
-                      {me?._count?.following ?? 0}
-                    </span>
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
-                      Following
-                    </span>
+                    <span className="text-lg font-bold text-zinc-900">{me?._count?.following ?? 0}</span>
+                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Following</span>
                   </div>
                 </div>
-
               </div>
 
-              {/* Sign Out Button */}
+              {/* Sign Out */}
               <div className="w-full sm:w-auto mt-4 sm:mt-0 sm:mb-4">
                 <button
                   onClick={() => signOut({ callbackUrl: "/login" })}
@@ -270,7 +125,6 @@ export default function ProfilePage() {
 
         {/* --- UPLOAD SECTION --- */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
           {/* Card A: Avatar */}
           <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-zinc-200 flex flex-col h-full">
             <div className="flex items-center gap-4 mb-6">
@@ -302,7 +156,7 @@ export default function ProfilePage() {
               </label>
 
               <button
-                onClick={handleProfilePicUpload}
+                onClick={handleAvatarUpload}
                 disabled={!avatarFile || isUploadingAvatar}
                 className="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-base font-bold rounded-2xl transition shadow-sm active:scale-[0.99]"
               >
@@ -350,7 +204,7 @@ export default function ProfilePage() {
               />
 
               <button
-                onClick={handleUploadPhoto}
+                onClick={handlePostUpload}
                 disabled={!postFile || isUploadingPost}
                 className="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-base font-bold rounded-2xl transition shadow-sm active:scale-[0.99]"
               >
@@ -369,7 +223,13 @@ export default function ProfilePage() {
             </span>
           </div>
 
-          {photos.length === 0 ? (
+          {isLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="aspect-square rounded-2xl" />
+              ))}
+            </div>
+          ) : photos.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-dashed border-zinc-300 text-center mx-2 sm:mx-0">
               <p className="text-zinc-900 font-bold text-lg">No photos yet</p>
               <p className="text-zinc-500 mt-1">Upload your first memory above.</p>
@@ -383,21 +243,16 @@ export default function ProfilePage() {
                   className="group relative cursor-pointer bg-zinc-100 rounded-2xl overflow-hidden border border-zinc-200 shadow-sm hover:shadow-lg transition-all duration-300 aspect-square"
                 >
                   <Image
-                    src={p.imageUrl}
+                    src={cldOptimized(p.imageUrl)}
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                     alt={p.caption ?? "photo"}
-
                   />
 
-                  {/* Overlay */}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                  {/* Desktop Hover Info */}
                   <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 hidden sm:block">
-                    <p className="text-white text-sm font-medium truncate">
-                      {p.caption || "No caption"}
-                    </p>
+                    <p className="text-white text-sm font-medium truncate">{p.caption || "No caption"}</p>
                     <p className="text-white/80 text-[10px] mt-0.5">
                       {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ""}
                     </p>
@@ -409,135 +264,20 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* --- RESPONSIVE LIGHTBOX MODAL --- */}
       {selectedPhoto && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-0 sm:p-6 backdrop-blur-md"
-          onClick={() => setSelectedPhoto(null)}
-        >
-          {/* Close Button */}
-          <button className="absolute top-4 right-4 sm:top-6 sm:right-6 text-white/70 hover:text-white p-2 z-50 transition-colors bg-black/20 rounded-full">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2.5}
-              stroke="currentColor"
-              className="w-8 h-8"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-
-          <div
-            className="bg-white rounded-none sm:rounded-3xl overflow-hidden shadow-2xl w-full h-full sm:h-auto sm:max-w-5xl sm:max-h-[90vh] flex flex-col md:flex-row"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Image Area */}
-            <div className="relative w-full md:w-2/3 h-[50vh] md:h-auto bg-zinc-100 flex items-center justify-center p-4 border-b md:border-b-0 md:border-r border-zinc-100">
-              <Image
-                src={selectedPhoto.imageUrl}
-                alt="Enlarged view"
-                width={1200}
-                height={1200}
-                className="object-contain w-full h-full max-h-[85vh] rounded-lg"
-
-              />
-            </div>
-
-            {/* Details Area */}
-            <div className="w-full md:w-1/3 flex flex-col p-6 sm:p-8 bg-white h-auto md:h-full overflow-y-auto pb-32">
-              {/* Modal User Info */}
-              <div className="flex items-center gap-3 mb-6 border-b border-zinc-100 pb-6 shrink-0">
-                <div className="relative w-12 h-12 rounded-full overflow-hidden bg-zinc-100 border border-zinc-200">
-                  {me?.image ? (
-                    <Image
-                      src={me.image}
-                      fill
-                      className="object-cover"
-                      alt="User"
-
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center w-full h-full text-zinc-400">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        className="w-8 h-8"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <span className="block font-bold text-zinc-900 text-base">
-                    {me?.username}
-                  </span>
-                </div>
-              </div>
-
-              {/* Caption */}
-              <div className="flex-1 min-h-[50px]">
-                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">
-                  Caption
-                </h4>
-                {selectedPhoto.caption ? (
-                  <p className="text-zinc-800 text-base leading-relaxed font-medium">
-                    {selectedPhoto.caption}
-                  </p>
-                ) : (
-                  <p className="text-zinc-400 text-sm italic">
-                    No caption provided.
-                  </p>
-                )}
-              </div>
-
-              {/* Timestamp Footer & Delete Button */}
-              <div className="mt-6 pt-6 border-t border-zinc-100 shrink-0 flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-zinc-400 uppercase tracking-wide font-bold mb-1">
-                    Posted on
-                  </p>
-                  <p className="text-zinc-900 font-semibold">
-                    {formatDateTime(selectedPhoto.createdAt)}
-                  </p>
-                </div>
-
-                {session.user.id === selectedPhoto.userId && (
-                  <button
-                    onClick={() => setDeletePhotoId(selectedPhoto.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-                    title="Delete Photo"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                      <path fillRule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 013.878.512.75.75 0 11-.49 1.478l-.56 12.73a5.75 5.75 0 01-5.75 5.75h-3.16a5.75 5.75 0 01-5.75-5.75l-.56-12.73a48.848 48.848 0 01-3.388-.512.75.75 0 11.49-1.478 48.856 48.856 0 013.976-.57c.303-.15.638-.285.995-.405l.169-.06c.646-.226 1.344-.337 2.05-.337.706 0 1.404.111 2.05.337l.169.06c.357.12.692.255.995.405.286.109.589.2.903.256zM12 2.25a.75.75 0 01.75.75v1.5h-1.5v-1.5A.75.75 0 0112 2.25z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                )}
-
-                {deletePhotoId && (
-                  <ConfirmDeleteModal
-                    loading={isDeleting}
-                    onCancel={() => setDeletePhotoId(null)}
-                    onConfirm={handleDelete}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <PhotoLightbox
+          photo={selectedPhoto}
+          authorName={me?.username}
+          authorImage={me?.image}
+          canDelete={session.user.id === selectedPhoto.userId}
+          isDeleting={isDeleting}
+          confirmingDelete={deletePhotoId !== null}
+          onClose={() => setSelectedPhoto(null)}
+          onRequestDelete={() => setDeletePhotoId(selectedPhoto.id)}
+          onCancelDelete={() => setDeletePhotoId(null)}
+          onConfirmDelete={handleDelete}
+        />
       )}
-
     </div>
   );
 }

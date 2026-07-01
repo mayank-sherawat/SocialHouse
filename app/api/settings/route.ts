@@ -1,37 +1,28 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
+import bcrypt from "bcryptjs";
+import { prisma } from "@/lib/prisma";
+import { apiSuccess, handleRoute, HttpError, parseBody, requireUser } from "@/lib/api";
+import { settingsSchema } from "@/lib/validations";
 
-export async function PATCH(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const PATCH = handleRoute(async (req: Request) => {
+  const user = await requireUser();
+  const body = await parseBody(req, settingsSchema);
+
+  // Only include fields the user actually provided.
+  const data: Prisma.UserUpdateInput = {};
+  if (body.username !== undefined) data.username = body.username;
+  if (body.email !== undefined) data.email = body.email;
+  if (body.bio !== undefined) data.bio = body.bio;
+  if (body.password !== undefined) data.password = await bcrypt.hash(body.password, 10);
+
+  try {
+    await prisma.user.update({ where: { id: user.id }, data });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      throw new HttpError(409, "That username or email is already taken.");
+    }
+    throw err;
   }
 
-  const body: {
-    username?: string;
-    email?: string;
-    bio?: string | null;
-    password?: string;
-  } = await req.json();
-
-  const data: Prisma.UserUpdateInput = {
-    username: body.username,
-    email: body.email,
-    bio: body.bio,
-  };
-
-  if (body.password && body.password.length >= 6) {
-    data.password = await bcrypt.hash(body.password, 10);
-  }
-
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data,
-  });
-
-  return NextResponse.json({ success: true });
-}
+  return apiSuccess({ success: true });
+});

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { cldOptimized } from "@/lib/cloudinary-url";
 
 interface Photo {
   id: string;
@@ -25,7 +26,7 @@ export default function PostGrid({ photos }: { photos: Photo[] }) {
               className="relative w-full aspect-square cursor-pointer bg-gray-100 rounded-lg overflow-hidden border border-gray-100"
             >
               <Image
-                src={photo.imageUrl}
+                src={cldOptimized(photo.imageUrl)}
                 alt={photo.caption || "Post"}
                 fill
                 className="object-cover transition-opacity duration-300 group-hover:opacity-90"
@@ -64,7 +65,7 @@ export default function PostGrid({ photos }: { photos: Photo[] }) {
             {/* Image Area - White Background to fix dark logos */}
             <div className="relative w-full flex-1 min-h-[50vh] bg-white flex items-center justify-center p-2">
                <Image
-                src={selectedPhoto.imageUrl}
+                src={cldOptimized(selectedPhoto.imageUrl)}
                 alt="Enlarged view"
                 width={1200}
                 height={1200}

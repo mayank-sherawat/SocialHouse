@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const [form, setForm] = useState({
@@ -17,7 +18,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false); // <--- Add this
 
   const handleLogin = async () => {
-    if (!form.email || !form.password) return alert("Please fill in all fields");
+    if (!form.email || !form.password) return toast.error("Please fill in all fields");
 
     setLoading(true); // <--- Start loading
 
@@ -32,13 +33,13 @@ export default function LoginPage() {
         router.push("/feed");
         // Don't stop loading here to prevent button flashing before redirect
       } else {
-        alert("Invalid credentials");
+        toast.error("Invalid credentials");
         setLoading(false); // <--- Stop loading on error
       }
     } catch (error) {
       console.error(error);
       setLoading(false);
-      alert("Something went wrong");
+      toast.error("Something went wrong");
     }
   };
 
@@ -116,6 +117,15 @@ export default function LoginPage() {
                     </svg>
                   )}
                 </button>
+              </div>
+
+              <div className="flex justify-end mb-3">
+                <Link
+                  href="/forgot-password"
+                  className="text-xs font-medium text-gray-500 hover:text-gray-800"
+                >
+                  Forgot password?
+                </Link>
               </div>
 
               <button

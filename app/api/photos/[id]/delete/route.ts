@@ -1,40 +1,36 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import cloudinary from "@/lib/cloudinary";
+import { apiSuccess, handleRoute, HttpError, requireUser } from "@/lib/api";
 
-export async function DELETE(
-  req: Request,
-  // 1. UPDATE TYPE: params is now a Promise
-  { params }: { params: Promise<{ id: string }> }
-) {
-  // 2. AWAIT PARAMS: You must await the promise before accessing .id
-  const { id } = await params;
+export const DELETE = handleRoute(
+  async (_req: Request, { params }: { params: Promise<{ id: string }> }) => {
+    const user = await requireUser();
+    const { id } = await params;
 
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const photo = await prisma.photo.findUnique({
+      where: { id },
+      select: { id: true, userId: true, publicId: true },
+    });
+
+    // Same response whether the photo is missing or owned by someone else, so
+    // the endpoint can't be used to probe which photo ids exist.
+    if (!photo || photo.userId !== user.id) {
+      throw new HttpError(404, "Photo not found.");
+    }
+
+    // Remove the DB row first (source of truth); the Cloudinary asset is
+    // best-effort — a failure there only leaves an orphaned file, not a
+    // dangling record.
+    await prisma.photo.delete({ where: { id } });
+
+    if (photo.publicId) {
+      try {
+        await cloudinary.uploader.destroy(photo.publicId);
+      } catch (err) {
+        console.error("Cloudinary destroy failed for", photo.publicId, err);
+      }
+    }
+
+    return apiSuccess({ success: true });
   }
-
-  // 3. USE 'id' (not params.id)
-  const photo = await prisma.photo.findUnique({
-    where: { id },
-  });
-
-  if (!photo || photo.userId !== session.user.id) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  // delete from cloudinary
-  if (photo.publicId) {
-    await cloudinary.uploader.destroy(photo.publicId);
-  }
-
-  // delete from database
-  await prisma.photo.delete({
-    where: { id },
-  });
-
-  return NextResponse.json({ success: true });
-}
+);

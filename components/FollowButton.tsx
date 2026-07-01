@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface Props {
   userId: string;
@@ -14,19 +15,25 @@ export default function FollowButton({ userId, isFollowing }: Props) {
   const router = useRouter();
 
   const toggleFollow = async () => {
-    // Optimistic UI (instant feedback)
-    setFollowing((prev) => !prev);
+    const next = !following;
+    setFollowing(next); // optimistic
 
-    await fetch(following ? "/api/unfollow" : "/api/follow", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId }),
-    });
+    try {
+      const res = await fetch(next ? "/api/follow" : "/api/unfollow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      if (!res.ok) throw new Error("request failed");
 
-    // Re-fetch server data (followers count, feed, etc.)
-    startTransition(() => {
-      router.refresh();
-    });
+      // Re-fetch server data (followers count, feed, etc.)
+      startTransition(() => {
+        router.refresh();
+      });
+    } catch {
+      setFollowing(!next); // revert on failure
+      toast.error("Something went wrong. Please try again.");
+    }
   };
 
   return (

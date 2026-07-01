@@ -1,28 +1,15 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { apiSuccess, handleRoute, parseBody, requireUser } from "@/lib/api";
+import { updateBioSchema } from "@/lib/validations";
 
-export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { bio } = await req.json();
-
-  if (typeof bio !== "string") {
-    return NextResponse.json({ error: "Invalid bio" }, { status: 400 });
-  }
-
-  if (bio.length > 150) {
-    return NextResponse.json({ error: "Bio too long" }, { status: 400 });
-  }
+export const POST = handleRoute(async (req: Request) => {
+  const user = await requireUser();
+  const { bio } = await parseBody(req, updateBioSchema);
 
   await prisma.user.update({
-    where: { id: session.user.id },
-    data: { bio: bio.trim() || null },
+    where: { id: user.id },
+    data: { bio: bio || null },
   });
 
-  return NextResponse.json({ success: true });
-}
+  return apiSuccess({ success: true });
+});

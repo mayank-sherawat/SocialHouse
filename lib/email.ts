@@ -1,23 +1,18 @@
 import { Resend } from "resend";
 
+/**
+ * Email (Resend) client.
+ *
+ * When `RESEND_API_KEY` is missing (e.g. local dev) we still construct a client
+ * with a placeholder so imports never crash; `isEmailConfigured` lets callers
+ * treat delivery as best-effort in that case.
+ */
 const apiKey = process.env.RESEND_API_KEY;
 
-// Safe initialization (prevents crash if key is missing)
-export const resend = new Resend(apiKey || "re_123_mock_key");
+export const resend = new Resend(apiKey || "re_placeholder_dev_key");
 
-export async function sendOTPEmail(email: string, otp: string) {
-  if (!apiKey || apiKey.startsWith("re_123")) {
-    return;
-  }
+/** True only when a real Resend key is configured. */
+export const isEmailConfigured = Boolean(apiKey && !apiKey.startsWith("re_placeholder"));
 
-  try {
-    await resend.emails.send({
-      from: "SocialHouse <no-reply@socialhouse.online>",
-      to: email,
-      subject: "Verify your email",
-      html: `<h1>Your OTP is: ${otp}</h1>`,
-    });
-  } catch (error) {
-    console.error("Resend API Error:", error);
-  }
-}
+/** Verified sender address (must be a Resend-verified domain in production). */
+export const EMAIL_FROM = process.env.EMAIL_FROM || "SocialHouse <no-reply@socialhouse.online>";

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
+import { PROFILE } from "@/lib/constants";
 
 type Props = {
   user: {
@@ -20,20 +22,26 @@ export default function SettingsForm({ user }: Props) {
   async function handleSave() {
     setLoading(true);
 
+    // Only send fields that can actually change (email is read-only here).
     const res = await fetch("/api/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, email, bio, password }),
+      body: JSON.stringify({
+        username,
+        bio,
+        ...(password ? { password } : {}),
+      }),
     });
 
     setLoading(false);
 
     if (!res.ok) {
-      alert("Failed to update settings");
+      const data = await res.json().catch(() => null);
+      toast.error(data?.error || "Failed to update settings");
       return;
     }
 
-    alert("Settings updated");
+    toast.success("Settings updated");
     setPassword("");
   }
 
@@ -80,12 +88,12 @@ export default function SettingsForm({ user }: Props) {
       <div className="space-y-2">
         <div className="flex items-center justify-between ml-1">
           <label className="text-sm font-semibold text-zinc-900">Bio</label>
-          <span className={`text-xs font-medium ${bio.length > 150 ? 'text-red-500' : 'text-zinc-400'}`}>
-            {bio.length}/160
+          <span className={`text-xs font-medium ${bio.length >= PROFILE.BIO_MAX_LENGTH ? 'text-red-500' : 'text-zinc-400'}`}>
+            {bio.length}/{PROFILE.BIO_MAX_LENGTH}
           </span>
         </div>
         <textarea
-          maxLength={160}
+          maxLength={PROFILE.BIO_MAX_LENGTH}
           value={bio}
           onChange={(e) => setBio(e.target.value)}
           rows={3}

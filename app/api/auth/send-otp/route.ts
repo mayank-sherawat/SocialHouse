@@ -1,50 +1,55 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { resend } from "@/lib/email"; // Ensure this path matches your project structure
+import { resend, isEmailConfigured, EMAIL_FROM } from "@/lib/email";
+import { apiSuccess, getClientIp, handleRoute, HttpError, parseBody } from "@/lib/api";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { generateOtp, hashOtp, otpExpiry } from "@/lib/otp";
+import { sendOtpSchema } from "@/lib/validations";
+import { OTP, RATE_LIMIT } from "@/lib/constants";
 
-export async function POST(req: Request) {
-  try {
-    const { email } = await req.json();
+export const POST = handleRoute(async (req: Request) => {
+  const { email } = await parseBody(req, sendOtpSchema);
+  const ip = getClientIp(req);
 
-    if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
-    }
+  // Throttle per-email (anti-spam / anti-enumeration) and per-IP (anti-abuse).
+  const byEmail = await checkRateLimit(
+    `send-otp:${email}`,
+    RATE_LIMIT.SEND_OTP_EMAIL.limit,
+    RATE_LIMIT.SEND_OTP_EMAIL.windowMs
+  );
+  const byIp = await checkRateLimit(
+    `send-otp-ip:${ip}`,
+    RATE_LIMIT.SEND_OTP_IP.limit,
+    RATE_LIMIT.SEND_OTP_IP.windowMs
+  );
+  if (!byEmail.success || !byIp.success) {
+    throw new HttpError(429, "Too many requests. Please try again later.");
+  }
 
-    // 1. Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+  // Generate a secure code, store only its hash, and invalidate prior codes.
+  const code = generateOtp();
+  const otpHash = await hashOtp(code);
 
-    // 2. Database: Delete old OTPs -> Create new one
-    await prisma.$transaction([
-      prisma.emailOTP.deleteMany({ where: { email } }),
-      prisma.emailOTP.create({
-        data: {
-          email,
-          otp,
-          expiresAt,
-        },
-      }),
-    ]);
+  await prisma.$transaction([
+    prisma.emailOTP.deleteMany({ where: { email } }),
+    prisma.emailOTP.create({ data: { email, otp: otpHash, expiresAt: otpExpiry() } }),
+  ]);
 
-    // 3. Send Email
+  if (isEmailConfigured) {
     await resend.emails.send({
-      from: "SocialHouse <no-reply@socialhouse.online>", // Or your domain
+      from: EMAIL_FROM,
       to: email,
       subject: "Verify your email",
       html: `
         <h2>Email Verification</h2>
-        <p>Your OTP is:</p>
-        <h1 style="letter-spacing: 5px;">${otp}</h1>
-        <p>This OTP expires in 10 minutes.</p>
+        <p>Your verification code is:</p>
+        <h1 style="letter-spacing: 5px;">${code}</h1>
+        <p>This code expires in ${OTP.EXPIRY_MS / 60000} minutes.</p>
       `,
     });
-
-    return NextResponse.json({ success: true });
-  } catch (err: unknown) {
-    console.error("Send OTP Error:", err);
-    return NextResponse.json(
-      { error: "Failed to send OTP" },
-      { status: 500 }
-    );
+  } else {
+    // No email provider configured (local dev): surface the code in server logs.
+    console.warn(`[send-otp] Email not configured. Code for ${email}: ${code}`);
   }
-}
+
+  return apiSuccess({ success: true });
+});

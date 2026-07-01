@@ -1,22 +1,15 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { apiSuccess, handleRoute, parseBody, requireUser } from "@/lib/api";
+import { followSchema } from "@/lib/validations";
 
-export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export const POST = handleRoute(async (req: Request) => {
+  const user = await requireUser();
+  const { userId } = await parseBody(req, followSchema);
 
-  const { userId } = await req.json();
-
+  // deleteMany is a no-op (and safe) when the follow doesn't exist.
   await prisma.follow.deleteMany({
-    where: {
-      followerId: session.user.id,
-      followingId: userId,
-    },
+    where: { followerId: user.id, followingId: userId },
   });
 
-  return NextResponse.json({ success: true });
-}
+  return apiSuccess({ success: true });
+});

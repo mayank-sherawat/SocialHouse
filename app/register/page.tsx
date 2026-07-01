@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -24,7 +25,7 @@ export default function RegisterPage() {
   // 1. SEND OTP FUNCTION
   const handleSendOtp = async () => {
     if (!form.email || emailError) {
-      return alert("Please enter a valid email address first.");
+      return toast.error("Please enter a valid email address first.");
     }
 
     setOtpLoading(true);
@@ -38,12 +39,13 @@ export default function RegisterPage() {
       const data = await res.json();
       if (res.ok) {
         setIsOtpSent(true);
+        toast.success("Verification code sent");
       } else {
-        alert(data.error || "Failed to send OTP");
+        toast.error(data.error || "Failed to send OTP");
       }
     } catch (error) {
       console.error(error);
-      alert("Something went wrong sending OTP");
+      toast.error("Something went wrong sending OTP");
     } finally {
       setOtpLoading(false);
     }
@@ -51,7 +53,7 @@ export default function RegisterPage() {
 
   // 2. VERIFY OTP FUNCTION
   const handleVerifyOtp = async () => {
-    if (!otp) return alert("Please enter the OTP");
+    if (!otp) return toast.error("Please enter the OTP");
 
     setOtpLoading(true);
     try {
@@ -66,12 +68,13 @@ export default function RegisterPage() {
       if (res.ok) {
         setIsEmailVerified(true);
         setIsOtpSent(false);
+        toast.success("Email verified");
       } else {
-        alert(data.error || "Verification failed");
+        toast.error(data.error || "Verification failed");
       }
     } catch (error) {
       console.error(error);
-      alert("Something went wrong verifying OTP");
+      toast.error("Something went wrong verifying OTP");
     } finally {
       setOtpLoading(false);
     }
@@ -82,20 +85,20 @@ export default function RegisterPage() {
     const { email, username, password } = form;
 
     if (!isEmailVerified) {
-      return alert("Please verify your email address first.");
+      return toast.error("Please verify your email address first.");
     }
 
-    if (!email || !username || !password) return alert("All fields are required");
+    if (!email || !username || !password) return toast.error("All fields are required");
 
     if (!/^[a-zA-Z0-9_.-]{3,30}$/.test(username)) {
-      return alert("Username: 3-30 chars (letters, numbers, _ . -)");
+      return toast.error("Username: 3-30 chars (letters, numbers, _ . -)");
     }
-    if (password.length < 8) return alert("Password must be at least 8 characters");
+    if (password.length < 8) return toast.error("Password must be at least 8 characters");
 
     const res = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, otp }),
     });
 
     if (res.ok) {
@@ -111,7 +114,7 @@ export default function RegisterPage() {
         const data = await res.json();
         if (data.error) message = data.error;
       } catch { }
-      alert(message);
+      toast.error(message);
     }
   };
 

@@ -4,7 +4,7 @@ import FollowButton from "@/components/FollowButton";
 // Import the new Client Component for the grid
 import PostGrid from "@/components/PostGrid"; 
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
