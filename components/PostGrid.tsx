@@ -3,12 +3,15 @@
 import { useState } from "react";
 import Image from "next/image";
 import { cldOptimized } from "@/lib/cloudinary-url";
+import LikeButton from "@/components/LikeButton";
 
 interface Photo {
   id: string;
   imageUrl: string;
   caption?: string | null;
   createdAt?: Date | string | null;
+  likeCount: number;
+  likedByMe: boolean;
 }
 
 export default function PostGrid({ photos }: { photos: Photo[] }) {

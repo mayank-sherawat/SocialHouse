@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { cldOptimized } from "@/lib/cloudinary-url";
+import LikeButton from "@/components/LikeButton";
 import type { FeedPhoto } from "@/lib/feed";
 
 function formatDate(date: string | Date) {
@@ -59,9 +60,18 @@ export default function FeedPost({ photo }: { photo: FeedPhoto }) {
         />
       </div>
 
+      {/* Actions */}
+      <div className="px-4 pt-3">
+        <LikeButton
+          photoId={photo.id}
+          initialLiked={photo.likedByMe}
+          initialCount={photo.likeCount}
+        />
+      </div>
+
       {/* Caption */}
       {photo.caption && (
-        <div className="p-4 pt-3">
+        <div className="p-4 pt-2">
           <div className="text-sm text-gray-800 leading-relaxed">
             <Link
               href={`/profile/${photo.user.username}`}

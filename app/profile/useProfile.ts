@@ -62,9 +62,10 @@ export function useProfile(userId: string | undefined) {
         toast.error("Upload failed");
         return false;
       }
-      const created: Photo = await res.json();
+      const created = (await res.json()) as Omit<Photo, "likeCount" | "likedByMe">;
+      const newPhoto: Photo = { ...created, likeCount: 0, likedByMe: false };
       // Prepend the new photo to the cache without a refetch.
-      await mutatePhotos((prev = []) => [created, ...prev], { revalidate: false });
+      await mutatePhotos((prev = []) => [newPhoto, ...prev], { revalidate: false });
       toast.success("Post uploaded");
       return true;
     } finally {

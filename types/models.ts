@@ -30,6 +30,8 @@ export interface Photo {
   publicId: string | null;
   createdAt: string;
   userId: string;
+  likeCount: number;
+  likedByMe: boolean;
 }
 
 /** A feed photo that includes its author. */

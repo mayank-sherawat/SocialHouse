@@ -3,6 +3,7 @@
 import Image from "next/image";
 import type { Photo } from "@/types/models";
 import { cldOptimized } from "@/lib/cloudinary-url";
+import LikeButton from "@/components/LikeButton";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
 
 interface PhotoLightboxProps {
@@ -95,6 +96,15 @@ export default function PhotoLightbox({
             <div>
               <span className="block font-bold text-zinc-900 text-base">{authorName}</span>
             </div>
+          </div>
+
+          {/* Like */}
+          <div className="mb-5">
+            <LikeButton
+              photoId={photo.id}
+              initialLiked={photo.likedByMe}
+              initialCount={photo.likeCount}
+            />
           </div>
 
           {/* Caption */}

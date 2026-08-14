@@ -24,6 +24,10 @@ export default async function UserProfilePage({ params }: PageProps) {
     include: {
       photos: {
         orderBy: { createdAt: "desc" }, // Most recent first
+        include: {
+          _count: { select: { likes: true } },
+          likes: { where: { userId: session.user.id }, select: { id: true } },
+        },
       },
       followers: {
         where: {
@@ -43,6 +47,15 @@ export default async function UserProfilePage({ params }: PageProps) {
 
   const isFollowing = user.followers.length > 0;
   const isOwner = session.user.id === user.id;
+
+  const photos = user.photos.map((p) => ({
+    id: p.id,
+    imageUrl: p.imageUrl,
+    caption: p.caption,
+    createdAt: p.createdAt,
+    likeCount: p._count.likes,
+    likedByMe: p.likes.length > 0,
+  }));
 
   return (
     <div className="min-h-screen bg-white">
@@ -97,7 +110,7 @@ export default async function UserProfilePage({ params }: PageProps) {
             {/* Stats Row */}
             <ul className="flex justify-center sm:justify-start items-center gap-8 sm:gap-10 text-base mb-5">
               <li className="flex sm:flex-row flex-col items-center sm:gap-1">
-                <span className="font-bold text-gray-900">{user.photos.length}</span>
+                <span className="font-bold text-gray-900">{photos.length}</span>
                 <span className="text-gray-600">posts</span>
               </li>
               <li className="flex sm:flex-row flex-col items-center sm:gap-1">
@@ -131,8 +144,8 @@ export default async function UserProfilePage({ params }: PageProps) {
         </div>
 
         {/* --- POSTS GRID (Interactive) --- */}
-        {user.photos.length > 0 ? (
-          <PostGrid photos={user.photos} />
+        {photos.length > 0 ? (
+          <PostGrid photos={photos} />
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center">
              <div className="w-16 h-16 rounded-full border-2 border-black flex items-center justify-center mb-4">
