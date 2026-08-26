@@ -2,6 +2,8 @@ import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { RATE_LIMIT } from "@/lib/constants";
 
 /**
  * Central NextAuth configuration.
@@ -25,6 +27,16 @@ export const authOptions: AuthOptions = {
         // with how accounts are stored at signup.
         const email = credentials.email.trim().toLowerCase();
 
+        // Rate limit login attempts per email
+        const limit = await checkRateLimit(
+          `login:${email}`,
+          RATE_LIMIT.LOGIN_EMAIL.limit,
+          RATE_LIMIT.LOGIN_EMAIL.windowMs
+        );
+        if (!limit.success) {
+          throw new Error("Too many login attempts. Please try again later.");
+        }
+
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) return null;
 
@@ -45,11 +57,14 @@ export const authOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.username = user.username;
         token.email = user.email;
+      }
+      if (trigger === "update" && session?.username) {
+        token.username = session.username;
       }
       return token;
     },

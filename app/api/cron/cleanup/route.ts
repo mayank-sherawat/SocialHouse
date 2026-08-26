@@ -13,12 +13,17 @@ export const GET = handleRoute(async (req: Request) => {
     throw new HttpError(401, "Unauthorized");
   }
 
-  const [rateLimits, expiredOtps] = await Promise.all([
+  const [rateLimits, expiredOtps, expiredResets] = await Promise.all([
     cleanupExpiredRateLimits(),
     prisma.emailOTP.deleteMany({ where: { expiresAt: { lt: new Date() } } }),
+    prisma.passwordReset.deleteMany({ where: { expiresAt: { lt: new Date() } } }),
   ]);
 
   return apiSuccess({
-    deleted: { rateLimits: rateLimits.count, expiredOtps: expiredOtps.count },
+    deleted: {
+      rateLimits: rateLimits.count,
+      expiredOtps: expiredOtps.count,
+      expiredResets: expiredResets.count,
+    },
   });
 });

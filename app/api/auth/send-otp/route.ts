@@ -25,6 +25,15 @@ export const POST = handleRoute(async (req: Request) => {
     throw new HttpError(429, "Too many requests. Please try again later.");
   }
 
+  // Prevent sending registration OTP if the email already has an account.
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true },
+  });
+  if (existingUser) {
+    throw new HttpError(400, "This email is already registered. Please sign in instead.");
+  }
+
   // Generate a secure code, store only its hash, and invalidate prior codes.
   const code = generateOtp();
   const otpHash = await hashOtp(code);

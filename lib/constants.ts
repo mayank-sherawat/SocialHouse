@@ -58,6 +58,7 @@ export const UPLOAD = {
  * Keyed by a stable identifier (email or IP) inside the route.
  */
 export const RATE_LIMIT = {
+  LOGIN_EMAIL: { limit: 10, windowMs: 15 * 60 * 1000 }, // 10 / 15min / email
   SEND_OTP_EMAIL: { limit: 5, windowMs: 60 * 60 * 1000 }, // 5 / hour / email
   SEND_OTP_IP: { limit: 20, windowMs: 60 * 60 * 1000 }, // 20 / hour / IP
   VERIFY_OTP_EMAIL: { limit: 10, windowMs: 15 * 60 * 1000 }, // 10 / 15min / email

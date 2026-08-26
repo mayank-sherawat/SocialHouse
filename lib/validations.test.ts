@@ -47,4 +47,15 @@ describe("settingsSchema", () => {
   it("accepts a partial update", () => {
     expect(settingsSchema.safeParse({ bio: "hello" }).success).toBe(true);
   });
+  it("rejects a new password without currentPassword", () => {
+    expect(settingsSchema.safeParse({ password: "newpassword123" }).success).toBe(false);
+  });
+  it("accepts a new password with currentPassword", () => {
+    expect(
+      settingsSchema.safeParse({
+        currentPassword: "oldpassword123",
+        password: "newpassword123",
+      }).success
+    ).toBe(true);
+  });
 });

@@ -81,9 +81,12 @@ model EmailOTP {
 model PasswordReset {
   id        String   @id @default(cuid())
   email     String
-  otp       String // bcrypt hash (reserved for future password-reset flow)
+  otp       String // bcrypt hash of the reset code
+  attempts  Int      @default(0) // failed verification attempts (capped)
   expiresAt DateTime
   createdAt DateTime @default(now())
+
+  @@index([email])
 }
 
 // Fixed-window rate limiter store (serverless-safe; no external infra).

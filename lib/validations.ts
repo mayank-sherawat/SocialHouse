@@ -63,9 +63,13 @@ export const updateBioSchema = z.object({ bio: bioSchema });
 export const settingsSchema = z
   .object({
     username: usernameSchema.optional(),
-    email: emailSchema.optional(),
     bio: bioSchema.nullable().optional(),
+    currentPassword: passwordSchema.optional(),
     password: passwordSchema.optional(),
+  })
+  .refine((data) => !(data.password && !data.currentPassword), {
+    message: "Current password is required to set a new password",
+    path: ["currentPassword"],
   })
   .refine((data) => Object.values(data).some((v) => v !== undefined), {
     message: "No changes provided",
