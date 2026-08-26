@@ -1,11 +1,13 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Link from "next/link";
 import { toast } from "sonner";
+import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
+import logoImg from "@/public/logo.png";
 
 export default function LoginPage() {
   const [form, setForm] = useState({
@@ -15,170 +17,244 @@ export default function LoginPage() {
 
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false); // <--- Add this
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
-    if (!form.email || !form.password) return toast.error("Please fill in all fields");
+  const handleLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!form.email || !form.password) {
+      toast.error("Please enter both your email and password.");
+      return;
+    }
 
-    setLoading(true); // <--- Start loading
+    setLoading(true);
+    const toastId = toast.loading("Authenticating credentials...");
 
     try {
       const res = await signIn("credentials", {
         redirect: false,
-        email: form.email,
+        email: form.email.trim().toLowerCase(),
         password: form.password,
       });
 
       if (res?.ok) {
+        toast.success("Welcome back.", { id: toastId });
         router.push("/feed");
-        // Don't stop loading here to prevent button flashing before redirect
       } else {
-        toast.error("Invalid credentials");
-        setLoading(false); // <--- Stop loading on error
+        toast.error(res?.error || "Invalid email or password.", { id: toastId });
+        setLoading(false);
       }
     } catch (error) {
       console.error(error);
       setLoading(false);
-      toast.error("Something went wrong");
+      toast.error("An unexpected error occurred. Please try again.", { id: toastId });
     }
   };
 
   return (
-    <main
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "linear-gradient(90deg, #ffffff 0% 50%, #F3E9DD 50% 100%)",
-      }}
-      className="w-full h-full flex items-center justify-center overflow-auto md:overflow-hidden"
-    >
-      <div
-        className="flex flex-col items-center justify-center w-full px-6 -mt-6 md:-mt-12"
-        style={{ maxWidth: 1000 }}
-      >
-        {/* Logo */}
-        <div className="flex items-center justify-center">
-          <Image
-            src="/logo.png"
-            alt="Socials"
-            width={290}
-            height={150}
-            priority
-          />
+    <div className="min-h-screen lg:h-screen lg:max-h-screen w-full bg-[#FAF9F6] text-[#181716] flex flex-col lg:flex-row antialiased selection:bg-[#181716] selection:text-[#FAF9F6] overflow-y-auto lg:overflow-hidden">
+      {/* ────────────────────────────────────────────────────────────
+          LEFT COLUMN: EDITORIAL PHOTOGRAPHY CHAMBER (Desktop Light)
+          ──────────────────────────────────────────────────────────── */}
+      <aside className="hidden lg:flex lg:w-1/2 bg-[#F2EFE9] text-[#181716] flex-col justify-between p-8 xl:p-12 border-r border-[#E2DFD7] relative overflow-hidden h-full">
+        {/* Archival Grid Overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.04] pointer-events-none"
+          style={{
+            backgroundImage:
+              "radial-gradient(#181716 1px, transparent 1px), linear-gradient(to right, #181716 1px, transparent 1px)",
+            backgroundSize: "32px 32px, 64px 64px",
+          }}
+        />
+
+        {/* Masthead Header */}
+        <div className="relative z-10 flex items-center justify-between border-b border-[#E2DFD7] pb-4">
+          <Link href="/feed" className="group flex items-center">
+            <Image
+              src={logoImg}
+              alt="SocialHouse"
+              className="h-8 w-auto object-contain"
+              priority
+            />
+          </Link>
+          <span className="font-mono text-[11px] text-[#8C8880] uppercase tracking-wider">
+            ISSUE 04 &bull; PHOTO FEED
+          </span>
         </div>
 
-        {/* Card */}
-        <div className="w-full max-w-sm -mt-6 md:-mt-10">
-          <div className="bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] border border-white/60 overflow-hidden">
-            <div className="px-6 py-8">
-              <h1 className="text-2xl sm:text-3xl font-semibold text-center mb-4 text-gray-900">
+        {/* Archival Photo Frame */}
+        <div className="relative z-10 my-auto py-2 max-w-sm mx-auto w-full">
+          <div className="bg-[#FAF9F6] border border-[#DCD8CE] p-4 shadow-sm space-y-3">
+            {/* Registration Marks */}
+            <div className="flex items-center justify-between text-[10px] font-mono text-[#78746C] tracking-widest border-b border-[#EAE7DF] pb-2">
+              <span>+ REC 024 &bull; 35MM</span>
+              <span>1/500s &bull; f/2.8 &bull; ISO 400</span>
+            </div>
+
+            {/* Photo Container */}
+            <div className="relative aspect-[4/3] w-full bg-[#EAE7DF] overflow-hidden border border-[#DCD8CE] flex items-center justify-center group">
+              <Image
+                src={logoImg}
+                alt="SocialHouse Photographic Print"
+                className="w-48 h-auto object-contain opacity-90 group-hover:scale-105 transition-transform duration-300"
+                priority
+              />
+            </div>
+
+            {/* Gallery Label Caption */}
+            <div className="space-y-1 pt-0.5">
+              <div className="flex items-baseline justify-between">
+                <h2 className="text-sm font-semibold tracking-tight text-[#181716]">
+                  A quiet room for visual work.
+                </h2>
+                <span className="font-mono text-[10px] text-[#78746C]">FIG. A</span>
+              </div>
+              <p className="text-xs text-[#6C6860] leading-relaxed">
+                Chronological, unhurried, and uncluttered. A dedicated home for photographers and friends.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Editorial Footer */}
+        <div className="relative z-10 flex items-center justify-between border-t border-[#E2DFD7] pt-4 text-[11px] font-mono text-[#8C8880]">
+          <span>EST. 2025</span>
+          <span>CURATED &bull; ZERO ADS &bull; CHRONOLOGICAL</span>
+        </div>
+      </aside>
+
+      {/* ────────────────────────────────────────────────────────────
+          RIGHT COLUMN: AUTHENTICATION CHAMBER (Responsive Light)
+          ──────────────────────────────────────────────────────────── */}
+      <main className="flex-1 flex flex-col justify-between p-6 sm:p-10 lg:p-12 bg-[#FAF9F6] text-[#181716] h-full overflow-y-auto lg:overflow-hidden">
+        {/* Mobile Masthead */}
+        <div className="lg:hidden flex items-center justify-center border-b border-[#E2DFD7] pb-4 mb-6">
+          <Link href="/feed" className="flex items-center justify-center group">
+            <Image
+              src={logoImg}
+              alt="SocialHouse"
+              className="h-9 w-auto object-contain mx-auto"
+              priority
+            />
+          </Link>
+        </div>
+
+        {/* Center Auth Form */}
+        <div className="w-full max-w-sm mx-auto my-auto py-2">
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="space-y-1.5">
+              <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#8C8880]">
+                AUTHENTICATION
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#181716]">
                 Sign In
               </h1>
+              <p className="text-xs text-[#6C6860] leading-relaxed">
+                Enter your registered credentials to access your archive.
+              </p>
+            </div>
 
-              <label className="block text-xs text-gray-600 mb-1">Email</label>
-              <input
-                className="w-full p-2.5 rounded-lg bg-gray-100/60 border border-gray-200 focus:border-gray-300 mb-3 focus:outline-none placeholder-gray-400"
-                placeholder="you@domain.com"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                type="email"
-                autoComplete="email"
-              />
-
-              <label className="block text-xs text-gray-600 mb-1">
-                Password
-              </label>
-
-              <div className="relative mb-4">
+            {/* Form */}
+            <form onSubmit={handleLogin} className="space-y-4">
+              {/* Email Address */}
+              <div className="space-y-1">
+                <label className="block font-mono text-[11px] uppercase tracking-wider text-[#5A564E]">
+                  Email Address
+                </label>
                 <input
-                  className="w-full p-2.5 pr-10 rounded-lg bg-gray-100/60 border border-gray-200 focus:border-gray-300 focus:outline-none placeholder-gray-400"
-                  placeholder="Password"
-                  type={showPassword ? "text" : "password"} // Toggles between text and password
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  autoComplete="current-password"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  placeholder="name@domain.com"
+                  value={form.email}
+                  onChange={(e) =>
+                    setForm({ ...form, email: e.target.value })
+                  }
+                  className="w-full px-3.5 py-2.5 bg-white border border-[#D4D0C6] rounded-none text-sm text-[#181716] placeholder:text-[#9A968E] focus:outline-none focus:border-[#181716] transition-colors"
                 />
-
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  {showPassword ? (
-                    // Eye Off Icon (Hide)
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                    </svg>
-                  ) : (
-                    // Eye On Icon (Show)
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  )}
-                </button>
               </div>
 
-              <div className="flex justify-end mb-3">
-                <Link
-                  href="/forgot-password"
-                  className="text-xs font-medium text-gray-500 hover:text-gray-800"
-                >
-                  Forgot password?
-                </Link>
+              {/* Password */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="block font-mono text-[11px] uppercase tracking-wider text-[#5A564E]">
+                    Password
+                  </label>
+                  <Link
+                    href="/forgot-password"
+                    className="text-[11px] font-mono text-[#78746C] hover:text-[#181716] transition-colors underline underline-offset-4"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={(e) =>
+                      setForm({ ...form, password: e.target.value })
+                    }
+                    className="w-full pl-3.5 pr-10 py-2.5 bg-white border border-[#D4D0C6] rounded-none text-sm text-[#181716] placeholder:text-[#9A968E] focus:outline-none focus:border-[#181716] transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#78746C] hover:text-[#181716] p-1 transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
               </div>
 
+              {/* Action Button */}
               <button
-                className="w-full py-2.5 rounded-lg bg-black text-white font-medium mb-3 flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
-                onClick={handleLogin}
+                type="submit"
                 disabled={loading}
+                className="w-full py-3 px-4 bg-[#181716] hover:bg-[#2C2A28] active:scale-[0.99] text-[#FAF9F6] font-mono text-xs tracking-[0.15em] uppercase font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 group"
               >
                 {loading ? (
-                  /* Loading Spinner SVG */
-                  <svg
-                    className="animate-spin h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>AUTHENTICATING...</span>
+                  </>
                 ) : (
-                  "Sign In"
+                  <>
+                    <span>ENTER ARCHIVE</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform duration-150" />
+                  </>
                 )}
               </button>
+            </form>
 
-              <div className="flex items-center gap-2 mb-3">
-                <hr className="flex-1 border-t border-gray-200/70" />
-                <span className="text-xs text-gray-400">Or</span>
-                <hr className="flex-1 border-t border-gray-200/70" />
-              </div>
-
-              <Link href="/register">
-                <button className="w-full py-2 rounded-lg bg-gray-100 text-gray-800 font-medium">
-                  Create Account
-                </button>
+            {/* Alternate Action Divider */}
+            <div className="pt-3 border-t border-[#E2DFD7] flex items-center justify-between text-xs font-mono text-[#6C6860]">
+              <span>NO ACCOUNT YET?</span>
+              <Link
+                href="/register"
+                className="font-bold text-[#181716] hover:underline underline-offset-4 flex items-center gap-1 group"
+              >
+                <span>CREATE ONE</span>
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform duration-150" />
               </Link>
             </div>
           </div>
-
-          <div className="text-center text-xs text-gray-500 mt-6">
-            Social House © {new Date().getFullYear()} • Privacy & Legal • Contact
-          </div>
         </div>
-      </div>
-    </main>
+
+        {/* Footer */}
+        <div className="border-t border-[#E2DFD7] pt-3 text-[10px] font-mono text-[#8C8880] flex flex-col sm:flex-row items-center justify-between gap-1">
+          <span>&copy; {new Date().getFullYear()} SOCIALHOUSE</span>
+          <span>SECURE &bull; ENCRYPTED SESSION</span>
+        </div>
+      </main>
+    </div>
   );
 }

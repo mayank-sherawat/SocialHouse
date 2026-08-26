@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
+import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
+import { PASSWORD, OTP } from "@/lib/constants";
+import logoImg from "@/public/logo.png";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -15,162 +18,280 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const sendCode = async () => {
-    if (!email) return toast.error("Enter your email");
+  const sendCode = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!email) {
+      toast.error("Please enter your email address.");
+      return;
+    }
+
     setLoading(true);
+    const toastId = toast.loading("Dispatching recovery code...");
     try {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
+
       if (res.ok) {
-        toast.success("If an account exists, a reset code was sent");
+        toast.success("If registered, a recovery code was dispatched.", { id: toastId });
         setStep("reset");
       } else {
         const data = await res.json().catch(() => null);
-        toast.error(data?.error || "Something went wrong");
+        toast.error(data?.error || "Failed to dispatch recovery code.", { id: toastId });
       }
     } catch {
-      toast.error("Something went wrong");
+      toast.error("Network error. Please try again.", { id: toastId });
     } finally {
       setLoading(false);
     }
   };
 
-  const resetPassword = async () => {
-    if (!otp || !password) return toast.error("Enter the code and a new password");
-    if (password.length < 8) return toast.error("Password must be at least 8 characters");
+  const resetPassword = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!otp || !password) {
+      toast.error("Please enter the verification code and your new password.");
+      return;
+    }
+    if (password.length < PASSWORD.MIN_LENGTH) {
+      toast.error(`Password must be at least ${PASSWORD.MIN_LENGTH} characters.`);
+      return;
+    }
+
     setLoading(true);
+    const toastId = toast.loading("Verifying code & resetting password...");
     try {
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp, password }),
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          otp: otp.trim(),
+          password,
+        }),
       });
+
       if (res.ok) {
-        toast.success("Password updated. Please sign in.");
+        toast.success("Password updated. Please sign in.", { id: toastId });
         router.push("/login");
       } else {
         const data = await res.json().catch(() => null);
-        toast.error(data?.error || "Reset failed");
+        toast.error(data?.error || "Reset failed. Check the verification code.", { id: toastId });
       }
     } catch {
-      toast.error("Something went wrong");
+      toast.error("Error updating password.", { id: toastId });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "linear-gradient(90deg, #ffffff 0% 50%, #F3E9DD 50% 100%)",
-      }}
-      className="w-full h-full flex items-center justify-center overflow-auto"
-    >
-      <div className="flex flex-col items-center justify-center w-full px-6 -mt-6 md:-mt-12" style={{ maxWidth: 1000 }}>
-        <Image src="/logo.png" alt="SocialHouse" width={220} height={56} priority />
+    <div className="min-h-screen lg:h-screen lg:max-h-screen w-full bg-[#FAF9F6] text-[#181716] flex flex-col lg:flex-row antialiased selection:bg-[#181716] selection:text-[#FAF9F6] overflow-y-auto lg:overflow-hidden">
+      {/* ────────────────────────────────────────────────────────────
+          LEFT COLUMN: EDITORIAL RECOVERY CHAMBER (Desktop Light)
+          ──────────────────────────────────────────────────────────── */}
+      <aside className="hidden lg:flex lg:w-1/2 bg-[#F2EFE9] text-[#181716] flex-col justify-between p-8 xl:p-12 border-r border-[#E2DFD7] relative overflow-hidden h-full">
+        <div
+          className="absolute inset-0 opacity-[0.04] pointer-events-none"
+          style={{
+            backgroundImage:
+              "radial-gradient(#181716 1px, transparent 1px), linear-gradient(to right, #181716 1px, transparent 1px)",
+            backgroundSize: "32px 32px, 64px 64px",
+          }}
+        />
 
-        <div className="w-full max-w-sm -mt-6 md:-mt-10">
-          <div className="bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] border border-white/60 overflow-hidden">
-            <div className="px-6 py-8">
-              <h1 className="text-2xl sm:text-3xl font-semibold text-center mb-2 text-gray-900">
-                Reset Password
+        <div className="relative z-10 flex items-center justify-between border-b border-[#E2DFD7] pb-4">
+          <Link href="/feed" className="group flex items-center">
+            <Image
+              src={logoImg}
+              alt="SocialHouse"
+              className="h-8 w-auto object-contain"
+              priority
+            />
+          </Link>
+          <span className="font-mono text-[11px] text-[#8C8880] uppercase tracking-wider">
+            CREDENTIAL RECOVERY
+          </span>
+        </div>
+
+        <div className="relative z-10 my-auto py-2 max-w-sm mx-auto w-full">
+          <div className="bg-[#FAF9F6] border border-[#DCD8CE] p-5 space-y-3 shadow-sm">
+            <div className="font-mono text-[11px] text-[#6C6860] tracking-widest uppercase border-b border-[#EAE7DF] pb-2 font-semibold">
+              ENCRYPTED RECOVERY PROTOCOL
+            </div>
+            <p className="text-xs font-mono text-[#6C6860] leading-relaxed">
+              Account credentials are recovered exclusively through single-use, time-delimited verification tokens dispatched directly to your confirmed mailbox.
+            </p>
+          </div>
+        </div>
+
+        <div className="relative z-10 flex items-center justify-between border-t border-[#E2DFD7] pt-4 text-[11px] font-mono text-[#8C8880]">
+          <span>VERIFICATION PROTOCOL</span>
+          <span>EST. 2025</span>
+        </div>
+      </aside>
+
+      {/* ────────────────────────────────────────────────────────────
+          RIGHT COLUMN: RECOVERY FORM (Responsive Light)
+          ──────────────────────────────────────────────────────────── */}
+      <main className="flex-1 flex flex-col justify-between p-6 sm:p-10 lg:p-12 bg-[#FAF9F6] text-[#181716] h-full overflow-y-auto lg:overflow-hidden">
+        <div className="lg:hidden flex items-center justify-center border-b border-[#E2DFD7] pb-4 mb-6">
+          <Link href="/feed" className="flex items-center justify-center group">
+            <Image
+              src={logoImg}
+              alt="SocialHouse"
+              className="h-9 w-auto object-contain mx-auto"
+              priority
+            />
+          </Link>
+        </div>
+
+        <div className="w-full max-w-sm mx-auto my-auto py-1">
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#8C8880]">
+                RECOVERY CHAMBER
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#181716]">
+                {step === "request" ? "Reset Password" : "Enter Verification"}
               </h1>
-              <p className="text-center text-sm text-gray-500 mb-6">
+              <p className="text-xs text-[#6C6860] leading-relaxed">
                 {step === "request"
-                  ? "Enter your email and we'll send a reset code."
-                  : "Enter the code and choose a new password."}
+                  ? "Enter your registered email to receive a recovery token."
+                  : "Enter the code sent to your email along with your new password."}
               </p>
+            </div>
 
-              {step === "request" ? (
-                <>
-                  <label className="block text-xs text-gray-600 mb-1">Email</label>
+            {step === "request" ? (
+              <form onSubmit={sendCode} className="space-y-3">
+                <div className="space-y-1">
+                  <label className="block font-mono text-[11px] uppercase tracking-wider text-[#5A564E]">
+                    Registered Email
+                  </label>
                   <input
                     type="email"
+                    required
                     autoComplete="email"
-                    className="w-full p-2.5 rounded-lg bg-gray-100/60 border border-gray-200 focus:border-gray-300 mb-4 focus:outline-none placeholder-gray-400"
-                    placeholder="you@domain.com"
+                    placeholder="name@domain.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && sendCode()}
+                    className="w-full px-3.5 py-2.5 bg-white border border-[#D4D0C6] rounded-none text-sm text-[#181716] placeholder:text-[#9A968E] focus:outline-none focus:border-[#181716] transition-colors"
                   />
-                  <button
-                    onClick={sendCode}
-                    disabled={loading}
-                    className="w-full py-2.5 rounded-lg bg-black text-white font-medium mb-3 disabled:opacity-50"
-                  >
-                    {loading ? "Sending..." : "Send Reset Code"}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <label className="block text-xs text-gray-600 mb-1">Verification Code</label>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 px-4 bg-[#181716] hover:bg-[#2C2A28] active:scale-[0.99] text-[#FAF9F6] font-mono text-xs tracking-[0.15em] uppercase font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 group"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>DISPATCHING CODE...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>SEND RECOVERY CODE</span>
+                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform duration-150" />
+                    </>
+                  )}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={resetPassword} className="space-y-3">
+                <div className="space-y-1">
+                  <label className="block font-mono text-[11px] uppercase tracking-wider text-[#5A564E]">
+                    Verification Code
+                  </label>
                   <input
                     type="text"
                     inputMode="numeric"
-                    maxLength={6}
-                    className="w-full p-2.5 rounded-lg bg-gray-100/60 border border-gray-200 focus:border-gray-300 mb-3 focus:outline-none tracking-widest placeholder-gray-400"
-                    placeholder="6-digit code"
+                    maxLength={OTP.LENGTH}
+                    required
+                    placeholder="123456"
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                    className="w-full px-3.5 py-2 bg-white border border-[#D4D0C6] rounded-none text-sm font-mono tracking-widest text-[#181716] focus:outline-none focus:border-[#181716] transition-colors text-center"
                   />
+                </div>
 
-                  <label className="block text-xs text-gray-600 mb-1">New Password</label>
-                  <div className="relative mb-4">
+                <div className="space-y-1">
+                  <label className="block font-mono text-[11px] uppercase tracking-wider text-[#5A564E]">
+                    New Password
+                  </label>
+                  <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
+                      required
                       autoComplete="new-password"
-                      className="w-full p-2.5 pr-10 rounded-lg bg-gray-100/60 border border-gray-200 focus:border-gray-300 focus:outline-none placeholder-gray-400"
-                      placeholder="At least 8 characters"
+                      placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && resetPassword()}
+                      className="w-full pl-3.5 pr-10 py-2 bg-white border border-[#D4D0C6] rounded-none text-sm text-[#181716] placeholder:text-[#9A968E] focus:outline-none focus:border-[#181716] transition-colors"
                     />
                     <button
                       type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-medium"
+                      onClick={() => setShowPassword(!showPassword)}
+                      tabIndex={-1}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#78746C] hover:text-[#181716] p-1 transition-colors"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
                     >
-                      {showPassword ? "Hide" : "Show"}
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
+                </div>
 
-                  <button
-                    onClick={resetPassword}
-                    disabled={loading}
-                    className="w-full py-2.5 rounded-lg bg-black text-white font-medium mb-3 disabled:opacity-50"
-                  >
-                    {loading ? "Updating..." : "Update Password"}
-                  </button>
-
-                  <button
-                    onClick={() => setStep("request")}
-                    className="w-full text-xs text-gray-400 hover:text-gray-600 underline"
-                  >
-                    Use a different email
-                  </button>
-                </>
-              )}
-
-              <div className="flex items-center gap-2 my-3">
-                <hr className="flex-1 border-t border-gray-200/70" />
-                <span className="text-xs text-gray-400">Or</span>
-                <hr className="flex-1 border-t border-gray-200/70" />
-              </div>
-
-              <Link href="/login">
-                <button className="w-full py-2 rounded-lg bg-gray-100 text-gray-800 font-medium">
-                  Back to Sign In
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 px-4 bg-[#181716] hover:bg-[#2C2A28] active:scale-[0.99] text-[#FAF9F6] font-mono text-xs tracking-[0.15em] uppercase font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 group"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>UPDATING PASSWORD...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>UPDATE PASSWORD</span>
+                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform duration-150" />
+                    </>
+                  )}
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStep("request")}
+                  className="w-full text-center text-xs font-mono text-[#78746C] hover:text-[#181716] underline pt-1 transition-colors"
+                >
+                  Change Email
+                </button>
+              </form>
+            )}
+
+            <div className="pt-3 border-t border-[#E2DFD7] flex items-center justify-between text-xs font-mono text-[#6C6860]">
+              <span>REMEMBER PASSWORD?</span>
+              <Link
+                href="/login"
+                className="font-bold text-[#181716] hover:underline underline-offset-4 flex items-center gap-1 group"
+              >
+                <span>SIGN IN</span>
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform duration-150" />
               </Link>
             </div>
           </div>
         </div>
-      </div>
-    </main>
+
+        <div className="border-t border-[#E2DFD7] pt-3 text-[10px] font-mono text-[#8C8880] flex flex-col sm:flex-row items-center justify-between gap-1">
+          <span>&copy; {new Date().getFullYear()} SOCIALHOUSE</span>
+          <span>PASSWORD RECOVERY</span>
+        </div>
+      </main>
+    </div>
   );
 }
