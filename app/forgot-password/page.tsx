@@ -102,13 +102,10 @@ export default function ForgotPasswordPage() {
         />
 
         <div className="relative z-10 flex items-center justify-between border-b border-[#E2DFD7] pb-4">
-          <Link href="/feed" className="group flex items-center">
-            <Image
-              src={logoImg}
-              alt="SocialHouse"
-              className="h-8 w-auto object-contain"
-              priority
-            />
+          <Link href="/" className="group flex items-center gap-3">
+            <span className="font-mono text-xs tracking-[0.25em] uppercase text-[#6C6860] group-hover:text-[#181716] transition-colors font-bold">
+              SOCIALHOUSE
+            </span>
           </Link>
           <span className="font-mono text-[11px] text-[#8C8880] uppercase tracking-wider">
             CREDENTIAL RECOVERY

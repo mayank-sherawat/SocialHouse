@@ -147,7 +147,6 @@ export default function RegisterPage() {
     }
 
     setSignupLoading(true);
-    const toastId = toast.loading("Creating creator account...");
 
     try {
       const res = await fetch("/api/auth/signup", {
@@ -164,7 +163,6 @@ export default function RegisterPage() {
       const data = await res.json().catch(() => null);
 
       if (res.ok) {
-        toast.success("Account created. Logging in...", { id: toastId });
         const loginRes = await signIn("credentials", {
           redirect: false,
           email: email.trim().toLowerCase(),
@@ -177,7 +175,7 @@ export default function RegisterPage() {
           window.location.href = "/login";
         }
       } else {
-        toast.error(data?.error || "Registration failed.", { id: toastId });
+        toast.error(data?.error || "Registration failed.");
         setSignupLoading(false);
       }
     } catch (error) {
@@ -207,13 +205,10 @@ export default function RegisterPage() {
 
         {/* Header */}
         <div className="relative z-10 flex items-center justify-between border-b border-[#E2DFD7] pb-4">
-          <Link href="/feed" className="group flex items-center">
-            <Image
-              src={logoImg}
-              alt="SocialHouse"
-              className="h-8 w-auto object-contain"
-              priority
-            />
+          <Link href="/" className="group flex items-center gap-3">
+            <span className="font-mono text-xs tracking-[0.25em] uppercase text-[#6C6860] group-hover:text-[#181716] transition-colors font-bold">
+              SOCIALHOUSE
+            </span>
           </Link>
           <span className="font-mono text-[11px] text-[#8C8880] uppercase tracking-wider">
             INVITATION &bull; REGISTER

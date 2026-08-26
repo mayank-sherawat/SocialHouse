@@ -25,7 +25,6 @@ export default function LoginPage() {
     }
 
     setLoading(true);
-    const toastId = toast.loading("Authenticating credentials...");
 
     try {
       const res = await signIn("credentials", {
@@ -35,18 +34,17 @@ export default function LoginPage() {
       });
 
       if (res?.ok) {
-        toast.success("Welcome back.", { id: toastId });
         const params = new URLSearchParams(window.location.search);
         const target = params.get("callbackUrl") || "/feed";
         window.location.href = target;
       } else {
-        toast.error(res?.error || "Invalid email or password.", { id: toastId });
+        toast.error(res?.error || "Invalid email or password.");
         setLoading(false);
       }
     } catch (error) {
       console.error(error);
       setLoading(false);
-      toast.error("An unexpected error occurred. Please try again.", { id: toastId });
+      toast.error("An unexpected error occurred. Please try again.");
     }
   };
 
@@ -68,13 +66,10 @@ export default function LoginPage() {
 
         {/* Masthead Header */}
         <div className="relative z-10 flex items-center justify-between border-b border-[#E2DFD7] pb-4">
-          <Link href="/feed" className="group flex items-center">
-            <Image
-              src={logoImg}
-              alt="SocialHouse"
-              className="h-8 w-auto object-contain"
-              priority
-            />
+          <Link href="/" className="group flex items-center gap-3">
+            <span className="font-mono text-xs tracking-[0.25em] uppercase text-[#6C6860] group-hover:text-[#181716] transition-colors font-bold">
+              SOCIALHOUSE
+            </span>
           </Link>
           <span className="font-mono text-[11px] text-[#8C8880] uppercase tracking-wider">
             ISSUE 04 &bull; PHOTO FEED
