@@ -65,7 +65,7 @@ lib/                     # Shared server logic:
   prisma.ts / cloudinary.ts / email.ts
 types/                   # Shared DTO + NextAuth type augmentation
 prisma/                  # schema.prisma + migrations
-middleware.ts            # Redirects unauthenticated users away from private pages
+proxy.ts                 # Route protection at the edge (Next.js 16 proxy)
 ```
 
 ## Conventions
