@@ -1,86 +1,102 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { cldOptimized } from "@/lib/cloudinary-url";
 import LikeButton from "@/components/LikeButton";
 import type { FeedPhoto } from "@/lib/feed";
+import { User, Clock } from "lucide-react";
 
 function formatDate(date: string | Date) {
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(date));
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(date));
 }
 
-/** A single feed post card (author header, image, caption). */
-export default function FeedPost({ photo }: { photo: FeedPhoto }) {
+/** Archival photographic card for feed timeline. */
+export default function FeedPost({
+  photo,
+  priority = false,
+}: {
+  photo: FeedPhoto;
+  priority?: boolean;
+}) {
   return (
-    <article className="bg-white border-b sm:border border-gray-200 sm:rounded-xl overflow-hidden shadow-sm">
-      {/* Header */}
-      <div className="p-4">
+    <article className="bg-[#FAF9F6] border border-[#DCD8CE] shadow-sm overflow-hidden transition-all duration-300">
+      {/* Post Header */}
+      <div className="px-5 py-3.5 flex items-center justify-between border-b border-[#EAE7DF] bg-[#FAF9F6]">
         <Link
           href={`/profile/${photo.user.username}`}
-          className="flex items-center gap-3 w-fit group"
+          className="flex items-center gap-3 group"
         >
-          <div className="relative h-10 w-10 rounded-full overflow-hidden border border-gray-100 bg-gray-50">
+          <div className="relative w-8 h-8 rounded-full overflow-hidden border border-[#DCD8CE] bg-[#EAE7DF] shrink-0">
             {photo.user.image ? (
               <Image
                 src={photo.user.image}
                 alt={`${photo.user.username}'s profile`}
                 fill
-                className="object-cover group-hover:opacity-90 transition-opacity"
+                sizes="32px"
+                className="object-cover group-hover:scale-105 transition-transform"
               />
             ) : (
-              <div className="flex items-center justify-center w-full h-full text-gray-400">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                  <path
-                    fillRule="evenodd"
-                    d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z"
-                    clipRule="evenodd"
-                  />
-                </svg>
+              <div className="flex items-center justify-center w-full h-full text-[#8C8880]">
+                <User className="w-4 h-4" />
               </div>
             )}
           </div>
           <div className="flex flex-col">
-            <span className="font-semibold text-sm text-gray-900 group-hover:underline">
-              {photo.user.username}
+            <span className="font-mono text-xs font-bold tracking-wider text-[#181716] group-hover:underline underline-offset-4">
+              @{photo.user.username}
             </span>
-            {photo.createdAt && (
-              <span className="text-xs text-gray-500">{formatDate(photo.createdAt)}</span>
-            )}
           </div>
         </Link>
+
+        {photo.createdAt && (
+          <div className="flex items-center gap-1.5 font-mono text-[10px] text-[#8C8880] uppercase tracking-wider">
+            <Clock className="w-3 h-3" />
+            <span>{formatDate(photo.createdAt)}</span>
+          </div>
+        )}
       </div>
 
-      {/* Image */}
-      <div className="w-full bg-gray-100">
+      {/* Image Viewport */}
+      <div className="relative w-full bg-[#EAE7DF] overflow-hidden flex items-center justify-center border-b border-[#EAE7DF] group">
         <Image
           src={cldOptimized(photo.imageUrl)}
-          alt={photo.caption || "User post"}
-          width={1000}
-          height={1000}
-          className="w-full h-auto object-cover max-h-[700px]"
+          alt={photo.caption || "Archival photo"}
+          width={1200}
+          height={1200}
+          priority={priority}
+          className="w-full h-auto object-cover max-h-[750px] transition-transform duration-700 group-hover:scale-[1.01]"
         />
       </div>
 
-      {/* Actions */}
-      <div className="px-4 pt-3">
+      {/* Action Footer */}
+      <div className="px-5 py-3 flex items-center justify-between border-b border-[#EAE7DF] bg-[#FAF9F6]">
         <LikeButton
           photoId={photo.id}
           initialLiked={photo.likedByMe}
           initialCount={photo.likeCount}
         />
+        <span className="font-mono text-[10px] text-[#8C8880] uppercase tracking-widest">
+          35MM ARCHIVE
+        </span>
       </div>
 
-      {/* Caption */}
+      {/* Caption Section */}
       {photo.caption && (
-        <div className="p-4 pt-2">
-          <div className="text-sm text-gray-800 leading-relaxed">
+        <div className="px-5 py-3.5 bg-[#FAF9F6]">
+          <p className="text-xs font-mono leading-relaxed text-[#181716]">
             <Link
               href={`/profile/${photo.user.username}`}
-              className="font-bold mr-2 text-gray-900 hover:underline"
+              className="font-bold mr-2 text-[#181716] hover:underline underline-offset-4"
             >
-              {photo.user.username}
+              @{photo.user.username}
             </Link>
-            {photo.caption}
-          </div>
+            <span className="text-[#3A3834]">{photo.caption}</span>
+          </p>
         </div>
       )}
     </article>

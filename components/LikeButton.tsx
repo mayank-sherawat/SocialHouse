@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Heart } from "lucide-react";
 
 interface LikeButtonProps {
   photoId: string;
@@ -11,7 +12,7 @@ interface LikeButtonProps {
   className?: string;
 }
 
-/** Heart toggle with an optimistic count; reconciles with the server response. */
+/** Tactile heart toggle with optimistic update and micro-animation. */
 export default function LikeButton({
   photoId,
   initialLiked,
@@ -26,7 +27,7 @@ export default function LikeButton({
     if (pending) return;
     const nextLiked = !liked;
 
-    // Optimistic update.
+    // Optimistic update
     setLiked(nextLiked);
     setCount((c) => Math.max(0, c + (nextLiked ? 1 : -1)));
     setPending(true);
@@ -40,10 +41,10 @@ export default function LikeButton({
       setLiked(data.liked);
       setCount(data.count);
     } catch {
-      // Roll back.
+      // Roll back
       setLiked(!nextLiked);
       setCount((c) => Math.max(0, c + (nextLiked ? -1 : 1)));
-      toast.error("Couldn't update like");
+      toast.error("Couldn't update reaction");
     } finally {
       setPending(false);
     }
@@ -56,26 +57,24 @@ export default function LikeButton({
       aria-pressed={liked}
       aria-label={liked ? "Unlike" : "Like"}
       className={cn(
-        "flex items-center gap-1.5 text-sm font-medium transition-colors",
-        liked ? "text-red-600" : "text-gray-500 hover:text-gray-800",
+        "group inline-flex items-center gap-1.5 text-xs font-mono tracking-wider transition-all duration-200 active:scale-90",
+        liked
+          ? "text-[#DC2626] font-bold"
+          : "text-[#6C6860] hover:text-[#181716]",
         className
       )}
     >
-      <svg
-        viewBox="0 0 24 24"
-        strokeWidth={1.8}
+      <Heart
         className={cn(
-          "w-6 h-6 transition-transform active:scale-125",
-          liked ? "fill-red-600 stroke-red-600" : "fill-none stroke-current"
+          "w-4 h-4 transition-transform duration-200 group-hover:scale-110",
+          liked
+            ? "fill-[#DC2626] text-[#DC2626]"
+            : "fill-none text-current"
         )}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
-        />
-      </svg>
-      {count > 0 && <span className="tabular-nums">{count}</span>}
+      />
+      <span className="tabular-nums font-mono text-xs">
+        {count} {count === 1 ? "LIKE" : "LIKES"}
+      </span>
     </button>
   );
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { cldOptimized } from "@/lib/cloudinary-url";
 import LikeButton from "@/components/LikeButton";
+import { X, Calendar } from "lucide-react";
 
 interface Photo {
   id: string;
@@ -20,28 +21,40 @@ export default function PostGrid({ photos }: { photos: Photo[] }) {
   return (
     <>
       {/* --- GRID VIEW --- */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
         {photos.map((photo) => (
-          <div key={photo.id} className="flex flex-col group">
-            {/* Image Thumbnail */}
-            <div
-              onClick={() => setSelectedPhoto(photo)}
-              className="relative w-full aspect-square cursor-pointer bg-gray-100 rounded-lg overflow-hidden border border-gray-100"
-            >
-              <Image
-                src={cldOptimized(photo.imageUrl)}
-                alt={photo.caption || "Post"}
-                fill
-                className="object-cover transition-opacity duration-300 group-hover:opacity-90"
-                
-              />
-            </div>
-            
-            {/* Grid Caption (Visible on Mobile & Desktop) */}
-            <div className="mt-2 px-1">
-               <p className="text-sm text-gray-900 line-clamp-1 break-all">
-                {photo.caption || <span className="text-gray-400 italic">No caption</span>}
-               </p>
+          <div
+            key={photo.id}
+            onClick={() => setSelectedPhoto(photo)}
+            className="group relative cursor-pointer bg-[#EAE7DF] border border-[#DCD8CE] overflow-hidden aspect-square transition-all duration-300"
+          >
+            <Image
+              src={cldOptimized(photo.imageUrl)}
+              alt={photo.caption || "Gallery Print"}
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+              className="object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-between p-3 text-white">
+              <div className="flex justify-end">
+                <span className="font-mono text-[10px] bg-black/60 px-2 py-0.5 backdrop-blur-sm">
+                  VIEW
+                </span>
+              </div>
+              <div className="space-y-1">
+                {photo.caption && (
+                  <p className="text-xs font-mono line-clamp-2 leading-tight">
+                    {photo.caption}
+                  </p>
+                )}
+                {photo.createdAt && (
+                  <div className="flex items-center gap-1 text-[10px] font-mono text-white/80">
+                    <Calendar className="w-2.5 h-2.5" />
+                    <span>{new Date(photo.createdAt).toLocaleDateString()}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -50,46 +63,57 @@ export default function PostGrid({ photos }: { photos: Photo[] }) {
       {/* --- LIGHTBOX MODAL --- */}
       {selectedPhoto && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
           onClick={() => setSelectedPhoto(null)}
         >
           {/* Close Button */}
-          <button className="absolute top-4 right-4 text-white hover:text-gray-300 p-2 z-50">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+          <button
+            type="button"
+            onClick={() => setSelectedPhoto(null)}
+            className="absolute top-4 right-4 text-white/80 hover:text-white p-2 z-50 transition-colors"
+          >
+            <X className="w-6 h-6" />
           </button>
 
           {/* Modal Content Container */}
-          <div 
-            className="bg-white rounded-lg overflow-hidden shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()} 
+          <div
+            className="bg-[#FAF9F6] border border-[#DCD8CE] shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* Image Area - White Background to fix dark logos */}
-            <div className="relative w-full flex-1 min-h-[50vh] bg-white flex items-center justify-center p-2">
-               <Image
+            {/* Image Area */}
+            <div className="relative w-full flex-1 min-h-[50vh] bg-[#EAE7DF] flex items-center justify-center p-3 border-b border-[#DCD8CE]">
+              <Image
                 src={cldOptimized(selectedPhoto.imageUrl)}
                 alt="Enlarged view"
                 width={1200}
                 height={1200}
-                className="object-contain w-auto h-auto max-h-[70vh] sm:max-h-[80vh]"
-                
+                className="object-contain w-auto h-auto max-h-[65vh] sm:max-h-[75vh]"
               />
             </div>
-            
-            {/* Caption Area - Below image, white bg, black text */}
-            {selectedPhoto.caption && (
-              <div className="p-4 border-t border-gray-100 bg-white">
-                <p className="text-gray-900 text-sm sm:text-base font-medium">
+
+            {/* Caption Area */}
+            <div className="p-5 bg-[#FAF9F6] flex flex-col gap-3">
+              <div className="flex items-center justify-between border-b border-[#EAE7DF] pb-3">
+                <LikeButton
+                  photoId={selectedPhoto.id}
+                  initialLiked={selectedPhoto.likedByMe}
+                  initialCount={selectedPhoto.likeCount}
+                />
+                {selectedPhoto.createdAt && (
+                  <span className="font-mono text-xs text-[#8C8880] uppercase tracking-wider">
+                    {new Date(selectedPhoto.createdAt).toLocaleDateString(undefined, {
+                      dateStyle: "medium",
+                    })}
+                  </span>
+                )}
+              </div>
+
+              {selectedPhoto.caption && (
+                <p className="font-mono text-xs leading-relaxed text-[#181716]">
                   {selectedPhoto.caption}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {selectedPhoto.createdAt 
-                    ? new Date(selectedPhoto.createdAt).toLocaleDateString() 
-                    : ""}
-                </p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -9,6 +9,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PAGINATION } from "@/lib/constants";
 import type { PublicUser } from "@/types/models";
+import { Search, User, ArrowRight } from "lucide-react";
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
@@ -28,102 +29,109 @@ export default function SearchPage() {
   const showSkeletons = enabled && isLoading;
 
   return (
-    <div className="min-h-screen bg-white flex items-start justify-center pt-20 px-4">
-      <div className="w-full max-w-lg bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-100 bg-white">
-          <h1 className="text-xl font-bold text-gray-800 mb-4">Find People</h1>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg
-                className={`w-5 h-5 transition-colors duration-200 ${isValidating ? "text-blue-500" : "text-gray-400"}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
+    <div className="w-full max-w-2xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="border-b border-[#E2DFD7] pb-4 px-1">
+        <h1 className="text-2xl font-bold tracking-tight text-[#181716]">
+          Find Creators
+        </h1>
+        <p className="text-xs font-mono text-[#6C6860] mt-1">
+          Search the creator by username.
+        </p>
+      </div>
 
-            <input
-              type="text"
-              placeholder="Search by username..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all placeholder:text-gray-400"
-            />
-
-            {isValidating && (
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-              </div>
-            )}
+      {/* Search Input Box */}
+      <div className="bg-[#FAF9F6] border border-[#DCD8CE] p-4 shadow-sm space-y-3">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8C8880]">
+            <Search className="w-4 h-4" />
           </div>
+          <input
+            type="text"
+            placeholder="e.g. alex, studio..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full pl-10 pr-10 py-3 bg-white border border-[#D4D0C6] rounded-none text-sm font-mono text-[#181716] placeholder:text-[#9A968E] focus:outline-none focus:border-[#181716] transition-all"
+          />
+          {isValidating && (
+            <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center">
+              <div className="w-4 h-4 border-2 border-[#181716]/20 border-t-[#181716] rounded-full animate-spin" />
+            </div>
+          )}
         </div>
 
-        {/* Results */}
-        <div className="max-h-[60vh] overflow-y-auto">
-          {showSkeletons ? (
-            <div className="divide-y divide-gray-50">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4 p-4">
-                  <Skeleton className="w-12 h-12 rounded-full shrink-0" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-3.5 w-32" />
-                    <Skeleton className="h-2.5 w-20" />
-                  </div>
+        <div className="flex items-center justify-between text-[10px] font-mono text-[#8C8880]">
+        </div>
+      </div>
+
+      {/* Results Container */}
+      <div className="bg-[#FAF9F6] border border-[#DCD8CE] shadow-sm overflow-hidden">
+        {showSkeletons ? (
+          <div className="divide-y divide-[#EAE7DF]">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 p-4">
+                <Skeleton className="w-10 h-10 rounded-full bg-[#EAE7DF] shrink-0" />
+                <div className="space-y-1.5 flex-1">
+                  <Skeleton className="h-3 w-32 bg-[#EAE7DF]" />
+                  <Skeleton className="h-2 w-20 bg-[#EAE7DF]" />
                 </div>
-              ))}
-            </div>
-          ) : !enabled || users.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              {!enabled ? (
-                <p className="text-sm">Type at least 2 characters to search</p>
-              ) : (
-                <p className="text-sm">No users found for &quot;{debounced}&quot;</p>
-              )}
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-50">
-              {users.map((user) => (
-                <Link
-                  key={user.id}
-                  href={`/profile/${user.username}`}
-                  className="flex items-center gap-4 p-4 hover:bg-blue-50 transition-colors duration-200 group"
-                >
-                  <div className="relative shrink-0">
+              </div>
+            ))}
+          </div>
+        ) : !enabled ? (
+          <div className="p-12 text-center space-y-2">
+            <p className="text-xs font-mono text-[#8C8880] uppercase tracking-wider">
+              Type at least 2 characters to search the archive
+            </p>
+          </div>
+        ) : users.length === 0 ? (
+          <div className="p-12 text-center space-y-2">
+            <p className="text-xs font-mono text-[#8C8880] uppercase tracking-wider">
+              No creators found for &ldquo;{debounced}&rdquo;
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-[#EAE7DF]">
+            {users.map((user) => (
+              <Link
+                key={user.id}
+                href={`/profile/${user.username}`}
+                className="flex items-center gap-4 p-4 bg-[#FAF9F6] hover:bg-[#F2EFE9] transition-colors duration-150 group"
+              >
+                <div className="relative shrink-0">
+                  <div className="w-10 h-10 rounded-full overflow-hidden border border-[#DCD8CE] bg-[#EAE7DF]">
                     {user.image ? (
                       <Image
                         src={user.image}
                         alt={user.username}
-                        width={48}
-                        height={48}
-                        className="w-12 h-12 rounded-full object-cover border border-gray-200 group-hover:border-blue-200 transition-colors"
+                        width={40}
+                        height={40}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center border border-gray-200 group-hover:border-blue-200 transition-colors">
-                        <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                        </svg>
+                      <div className="w-full h-full flex items-center justify-center text-[#8C8880]">
+                        <User className="w-5 h-5" />
                       </div>
                     )}
                   </div>
+                </div>
 
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-mono text-xs font-bold tracking-wider text-[#181716] group-hover:underline underline-offset-4 truncate">
                       @{user.username}
                     </span>
-                    <span className="text-xs text-gray-400">View Profile</span>
                   </div>
+                  <span className="text-[10px] font-mono text-[#8C8880] uppercase tracking-wider">
+                    VIEW ARCHIVE PROFILE
+                  </span>
+                </div>
 
-                  <svg className="w-5 h-5 text-gray-300 ml-auto group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
+                <ArrowRight className="w-4 h-4 text-[#8C8880] group-hover:text-[#181716] group-hover:translate-x-0.5 transition-all" />
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

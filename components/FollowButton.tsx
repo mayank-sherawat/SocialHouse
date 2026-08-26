@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { UserCheck, UserPlus } from "lucide-react";
 
 interface Props {
   userId: string;
@@ -32,24 +33,32 @@ export default function FollowButton({ userId, isFollowing }: Props) {
       });
     } catch {
       setFollowing(!next); // revert on failure
-      toast.error("Something went wrong. Please try again.");
+      toast.error("Something went wrong updating follow status.");
     }
   };
 
   return (
     <button
+      type="button"
       onClick={toggleFollow}
       disabled={isPending}
-      className={`
-        mt-3 px-5 py-1.5 rounded-full text-sm font-medium
-        transition-all duration-300
-        ${following
-          ? "bg-gray-200 text-gray-800 hover:bg-red-100 hover:text-red-600"
-          : "bg-blue-600 text-white hover:bg-blue-700"}
-        ${isPending ? "opacity-60 scale-95" : "scale-100"}
-      `}
+      className={`inline-flex items-center gap-1.5 px-4 py-1.5 font-mono text-xs uppercase tracking-wider font-bold transition-all active:scale-95 disabled:opacity-60 ${
+        following
+          ? "bg-[#F2EFE9] border border-[#DCD8CE] text-[#181716] hover:bg-[#FEE2E2] hover:text-[#DC2626] hover:border-[#FCA5A5]"
+          : "bg-[#181716] hover:bg-[#2C2A28] text-[#FAF9F6]"
+      }`}
     >
-      {following ? "Following" : "Follow"}
+      {following ? (
+        <>
+          <UserCheck className="w-3.5 h-3.5" />
+          <span>FOLLOWING</span>
+        </>
+      ) : (
+        <>
+          <UserPlus className="w-3.5 h-3.5" />
+          <span>FOLLOW</span>
+        </>
+      )}
     </button>
   );
 }

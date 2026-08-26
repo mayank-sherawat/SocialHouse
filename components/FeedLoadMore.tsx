@@ -51,15 +51,21 @@ export default function FeedLoadMore({ initialCursor }: { initialCursor: string 
       ))}
 
       {!reachedEnd && (
-        <div ref={sentinelRef} className="bg-white sm:border border-gray-200 sm:rounded-xl overflow-hidden shadow-sm">
-          <div className="p-4 flex items-center gap-3">
-            <Skeleton className="h-10 w-10 rounded-full" />
-            <div className="space-y-2">
-              <Skeleton className="h-3 w-24" />
-              <Skeleton className="h-2.5 w-16" />
+        <div ref={sentinelRef} className="bg-[#FAF9F6] border border-[#DCD8CE] shadow-sm overflow-hidden mb-8">
+          <div className="p-4 flex items-center gap-3 border-b border-[#EAE7DF]">
+            <Skeleton className="h-8 w-8 rounded-full bg-[#EAE7DF]" />
+            <div className="space-y-1.5">
+              <Skeleton className="h-3 w-28 bg-[#EAE7DF]" />
+              <Skeleton className="h-2 w-16 bg-[#EAE7DF]" />
             </div>
           </div>
-          <Skeleton className="w-full aspect-square rounded-none" />
+          <Skeleton className="w-full aspect-[4/3] rounded-none bg-[#EAE7DF]" />
+        </div>
+      )}
+
+      {reachedEnd && items.length > 0 && (
+        <div className="py-8 text-center font-mono text-[11px] text-[#8C8880] tracking-widest uppercase border-t border-[#E2DFD7] mt-8">
+          &mdash; END OF ARCHIVE TIMELINE &bull; ALL MOMENTS EXPLORED &mdash;
         </div>
       )}
     </>
