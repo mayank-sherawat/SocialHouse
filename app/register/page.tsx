@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
@@ -26,8 +25,6 @@ export default function RegisterPage() {
   const [emailError, setEmailError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [cooldown, setCooldown] = useState(0);
-
-  const router = useRouter();
 
   useEffect(() => {
     if (cooldown > 0) {
@@ -175,9 +172,9 @@ export default function RegisterPage() {
         });
 
         if (loginRes?.ok) {
-          router.push("/feed");
+          window.location.href = "/feed";
         } else {
-          router.push("/login");
+          window.location.href = "/login";
         }
       } else {
         toast.error(data?.error || "Registration failed.", { id: toastId });

@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
@@ -15,7 +14,6 @@ export default function LoginPage() {
     password: "",
   });
 
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -38,7 +36,9 @@ export default function LoginPage() {
 
       if (res?.ok) {
         toast.success("Welcome back.", { id: toastId });
-        router.push("/feed");
+        const params = new URLSearchParams(window.location.search);
+        const target = params.get("callbackUrl") || "/feed";
+        window.location.href = target;
       } else {
         toast.error(res?.error || "Invalid email or password.", { id: toastId });
         setLoading(false);
