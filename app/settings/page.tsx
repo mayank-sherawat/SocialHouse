@@ -20,22 +20,19 @@ export default async function SettingsPage() {
   if (!user) redirect("/login");
 
   return (
-    <div className="min-h-screen bg-zinc-50/50 pb-32">
-      {/* Decorative Header Background */}
-      <div className="h-48 bg-zinc-900 w-full relative overflow-hidden">
-        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#ffffff_1px,transparent_1px)] background-size:[16px_16px]"></div>
+    <div className="w-full max-w-2xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="border-b border-[#E2DFD7] pb-4 px-1">
+        <h1 className="text-2xl font-bold tracking-tight text-[#181716]">
+          Settings &amp; Security
+        </h1>
+        <p className="text-xs font-mono text-[#6C6860] mt-1">
+          Manage your creator identity, bio, and password credentials.
+        </p>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 -mt-24 relative z-10">
-        {/* Header Text */}
-        <div className="mb-8 text-center sm:text-left">
-          <h1 className="text-3xl font-extrabold text-white mb-2">Account Settings</h1>
-          <p className="text-zinc-300 font-medium">Manage your profile details and security.</p>
-        </div>
-
-        {/* Form Container */}
-        <SettingsForm user={user} />
-      </div>
+      {/* Form Container */}
+      <SettingsForm user={user} />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
 import type { Photo } from "@/types/models";
@@ -9,6 +9,23 @@ import PhotoLightbox from "@/components/PhotoLightbox";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cldOptimized } from "@/lib/cloudinary-url";
 import { useProfile } from "./useProfile";
+import {
+  Camera,
+  Upload,
+  User,
+  LogOut,
+  Image as ImageIcon,
+  Calendar,
+  X,
+  FileCheck,
+  Loader2,
+} from "lucide-react";
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export default function ProfilePage() {
   const { data: session } = useSession();
@@ -24,17 +41,25 @@ export default function ProfilePage() {
     deletePhoto,
   } = useProfile(session?.user?.id);
 
-  // UI-only state.
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [postFile, setPostFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [deletePhotoId, setDeletePhotoId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"post" | "avatar">("post");
+
+  const postPreview = useMemo(() => {
+    return postFile ? URL.createObjectURL(postFile) : null;
+  }, [postFile]);
+
+  const avatarPreview = useMemo(() => {
+    return avatarFile ? URL.createObjectURL(avatarFile) : null;
+  }, [avatarFile]);
 
   if (!session) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50">
-        <p className="text-zinc-400">Please log in.</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#FAF9F6] text-xs font-mono text-[#8C8880]">
+        <span>AUTHENTICATION REQUIRED</span>
       </div>
     );
   }
@@ -45,7 +70,7 @@ export default function ProfilePage() {
   };
 
   const handlePostUpload = async () => {
-    if (!postFile) return toast.error("Select a file first");
+    if (!postFile) return toast.error("Select a photo first");
     if (await uploadPost(postFile, caption)) {
       setCaption("");
       setPostFile(null);
@@ -61,209 +86,397 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50/50 pt-6 px-4 pb-32 sm:py-10 sm:px-6">
-      <div className="max-w-6xl mx-auto space-y-8">
-        {/* --- HEADER CARD --- */}
-        <div className="bg-white rounded-3xl shadow-sm border border-zinc-200 overflow-hidden">
-          <div className="h-25 sm:h-30 bg-teal-100 relative">
-            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] background-size:[16px_16px]"></div>
+    <div className="w-full space-y-8">
+      {/* ────────────────────────────────────────────────────────────
+          1. CREATOR PROFILE HEADER
+          ──────────────────────────────────────────────────────────── */}
+      <div className="bg-[#FAF9F6] border border-[#DCD8CE] p-6 sm:p-8 shadow-sm space-y-6">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+          {/* Avatar */}
+          <div className="relative shrink-0">
+            <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-2 border-[#DCD8CE] bg-[#EAE7DF]">
+              {me?.image ? (
+                <Image
+                  src={me.image}
+                  alt="Profile Avatar"
+                  fill
+                  sizes="(max-width: 640px) 96px, 112px"
+                  className="object-cover"
+                  priority
+                />
+              ) : (
+                <div className="flex items-center justify-center w-full h-full text-[#8C8880]">
+                  <User className="w-10 h-10" />
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="px-6 pb-8 bg-teal-100">
-            <div className="relative flex flex-col sm:flex-row items-center sm:items-end -mt-16 sm:-mt-20 gap-4 sm:gap-8">
-              {/* Avatar */}
-              <div className="relative shrink-0 z-10">
-                <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full ring-4 ring-white overflow-hidden bg-white shadow-lg border border-zinc-100">
-                  {me?.image ? (
-                    <Image src={me.image} alt="Profile" fill className="object-cover rounded-full" />
-                  ) : (
-                    <div className="flex items-center justify-center w-full h-full text-zinc-300 bg-zinc-50">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-16 h-16">
-                        <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  )}
-                </div>
+          {/* User Details */}
+          <div className="flex-1 text-center sm:text-left space-y-2">
+            <div className="space-y-0.5">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#181716]">
+                @{me?.username ?? session.user.username}
+              </h1>
+              <p className="font-mono text-xs text-[#6C6860]">
+                {me?.email ?? session.user.email}
+              </p>
+            </div>
+
+            {/* Metrics Row */}
+            <div className="flex items-center justify-center sm:justify-start gap-8 pt-2 font-mono">
+              <div className="flex flex-col items-center sm:items-start">
+                <span className="text-base font-bold text-[#181716] tabular-nums">
+                  {photos.length}
+                </span>
+                <span className="text-[10px] uppercase tracking-wider text-[#8C8880]">
+                  Prints
+                </span>
               </div>
-
-              {/* User Details */}
-              <div className="flex-1 text-center sm:text-left mt-2 sm:mt-0 sm:mb-2 w-full">
-                <h1 className="text-2xl sm:text-4xl font-extrabold text-zinc-900 tracking-tight">
-                  {me?.username ?? session.user.username}
-                </h1>
-                <p className="text-zinc-500 font-medium text-base sm:text-lg mt-1">
-                  {me?.email ?? session.user.email}
-                </p>
-
-                <div className="flex items-center justify-center sm:justify-start gap-6 mt-4">
-                  <div className="flex flex-col sm:items-start items-center">
-                    <span className="text-lg font-bold text-zinc-900">{me?._count?.followers ?? 0}</span>
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Followers</span>
-                  </div>
-                  <div className="flex flex-col sm:items-start items-center">
-                    <span className="text-lg font-bold text-zinc-900">{me?._count?.following ?? 0}</span>
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Following</span>
-                  </div>
-                </div>
+              <div className="flex flex-col items-center sm:items-start">
+                <span className="text-base font-bold text-[#181716] tabular-nums">
+                  {me?._count?.followers ?? 0}
+                </span>
+                <span className="text-[10px] uppercase tracking-wider text-[#8C8880]">
+                  Followers
+                </span>
               </div>
-
-              {/* Sign Out */}
-              <div className="w-full sm:w-auto mt-4 sm:mt-0 sm:mb-4">
-                <button
-                  onClick={() => signOut({ callbackUrl: "/login" })}
-                  className="w-full sm:w-auto px-8 py-3.5 text-base font-bold text-white bg-red-600 hover:bg-red-700 rounded-2xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-                  </svg>
-                  Sign Out
-                </button>
+              <div className="flex flex-col items-center sm:items-start">
+                <span className="text-base font-bold text-[#181716] tabular-nums">
+                  {me?._count?.following ?? 0}
+                </span>
+                <span className="text-[10px] uppercase tracking-wider text-[#8C8880]">
+                  Following
+                </span>
               </div>
             </div>
+          </div>
+
+          {/* Sign Out Button */}
+          <div className="shrink-0 pt-2 sm:pt-0">
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="px-4 py-2 bg-[#F2EFE9] hover:bg-[#EAE7DF] border border-[#DCD8CE] text-[#C62828] font-mono text-xs uppercase tracking-wider font-semibold transition-colors flex items-center gap-2"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>LOGOUT</span>
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* --- UPLOAD SECTION --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Card A: Avatar */}
-          <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-zinc-200 flex flex-col h-full">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 bg-blue-50 rounded-2xl text-blue-600">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              <h2 className="text-xl font-bold text-zinc-900">Profile Picture</h2>
-            </div>
+      {/* ────────────────────────────────────────────────────────────
+          2. STUDIO MEDIA DISPATCH (Tabs)
+          ──────────────────────────────────────────────────────────── */}
+      <div className="bg-[#FAF9F6] border border-[#DCD8CE] shadow-sm overflow-hidden">
+        {/* Tab Selection */}
+        <div className="flex border-b border-[#EAE7DF] bg-[#F2EFE9]">
+          <button
+            type="button"
+            onClick={() => setActiveTab("post")}
+            className={`flex-1 py-3 px-4 font-mono text-xs uppercase tracking-wider font-bold transition-colors flex items-center justify-center gap-2 border-r border-[#EAE7DF] ${
+              activeTab === "post"
+                ? "bg-[#FAF9F6] text-[#181716] border-b-2 border-b-[#181716]"
+                : "text-[#6C6860] hover:text-[#181716]"
+            }`}
+          >
+            <Camera className="w-4 h-4" />
+            <span>Publish New Photo</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("avatar")}
+            className={`flex-1 py-3 px-4 font-mono text-xs uppercase tracking-wider font-bold transition-colors flex items-center justify-center gap-2 ${
+              activeTab === "avatar"
+                ? "bg-[#FAF9F6] text-[#181716] border-b-2 border-b-[#181716]"
+                : "text-[#6C6860] hover:text-[#181716]"
+            }`}
+          >
+            <User className="w-4 h-4" />
+            <span>Update Profile Avatar</span>
+          </button>
+        </div>
 
-            <div className="flex-1 flex flex-col justify-end space-y-5">
-              <label className="group flex flex-col items-center justify-center w-full h-40 sm:h-48 border-2 border-dashed border-zinc-200 rounded-3xl cursor-pointer bg-zinc-50/50 hover:bg-blue-50/30 hover:border-blue-200 transition-all duration-300">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setAvatarFile(e.target.files?.[0] || null)}
-                  className="hidden"
-                />
-                <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4 w-full">
-                  <p className="text-sm sm:text-base text-zinc-500 font-medium group-hover:text-blue-600 transition-colors w-full truncate">
-                    {avatarFile ? (
-                      <span className="text-zinc-900 font-bold">{avatarFile.name}</span>
-                    ) : (
-                      "Click to select Picture"
-                    )}
-                  </p>
-                </div>
-              </label>
-
-              <button
-                onClick={handleAvatarUpload}
-                disabled={!avatarFile || isUploadingAvatar}
-                className="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-base font-bold rounded-2xl transition shadow-sm active:scale-[0.99]"
-              >
-                {isUploadingAvatar ? "Uploading..." : "Save New Profile"}
-              </button>
-            </div>
-          </div>
-
-          {/* Card B: Post */}
-          <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-zinc-200 flex flex-col h-full">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 bg-blue-50 rounded-2xl text-blue-600">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-              </div>
-              <h2 className="text-xl font-bold text-zinc-900">New Post</h2>
-            </div>
-
-            <div className="flex-1 flex flex-col space-y-5">
-              <label className="group flex flex-col items-center justify-center w-full h-32 sm:h-40 border-2 border-dashed border-zinc-200 rounded-3xl cursor-pointer bg-zinc-50/50 hover:bg-blue-50/30 hover:border-blue-200 transition-all duration-300">
+        {/* Tab 1: New Post */}
+        {activeTab === "post" && (
+          <div className="p-6 sm:p-8 space-y-5">
+            {!postPreview ? (
+              <label className="group flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-[#DCD8CE] hover:border-[#181716] bg-white cursor-pointer transition-colors p-4 text-center">
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => setPostFile(e.target.files?.[0] || null)}
                   className="hidden"
                 />
-                <div className="text-center px-4 w-full">
-                  <p className="text-sm sm:text-base text-zinc-500 font-medium w-full truncate group-hover:text-blue-600 transition-colors">
-                    {postFile ? (
-                      <span className="text-zinc-900 font-bold">{postFile.name}</span>
-                    ) : (
-                      "Select photo to upload"
-                    )}
+                <Upload className="w-6 h-6 text-[#8C8880] group-hover:text-[#181716] mb-2 transition-colors" />
+                <p className="font-mono text-xs text-[#181716] font-semibold">
+                  Select Photo
+                </p>
+                <p className="font-mono text-[10px] text-[#8C8880] mt-0.5">
+                  JPEG, PNG, WebP up to 10MB
+                </p>
+              </label>
+            ) : (
+              /* Selected Photo Preview Card */
+              <div className="bg-white border border-[#DCD8CE] p-4 flex flex-col sm:flex-row items-center gap-4">
+                <div className="relative w-24 h-24 sm:w-28 sm:h-28 bg-[#EAE7DF] border border-[#DCD8CE] overflow-hidden shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={postPreview}
+                    alt="Selected preview"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                <div className="flex-1 min-w-0 text-center sm:text-left space-y-1">
+                  <div className="flex items-center justify-center sm:justify-start gap-1.5 font-mono text-[10px] text-[#1B5E20] font-bold">
+                    <FileCheck className="w-3.5 h-3.5" />
+                    <span>PHOTO ATTACHED</span>
+                  </div>
+                  <p className="font-mono text-xs font-bold text-[#181716] truncate">
+                    {postFile?.name}
+                  </p>
+                  <p className="font-mono text-[10px] text-[#8C8880]">
+                    {postFile ? formatFileSize(postFile.size) : ""} &bull; Ready to publish
                   </p>
                 </div>
-              </label>
 
+                <div className="shrink-0 flex items-center gap-2">
+                  <label className="px-3 py-1.5 bg-[#F2EFE9] hover:bg-[#EAE7DF] border border-[#DCD8CE] text-[#181716] font-mono text-xs font-semibold cursor-pointer transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setPostFile(e.target.files?.[0] || null)}
+                      className="hidden"
+                    />
+                    Change
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setPostFile(null)}
+                    className="p-1.5 text-[#8C8880] hover:text-[#C62828] hover:bg-[#FEE2E2] transition-colors"
+                    title="Remove Photo"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <label className="block font-mono text-[11px] uppercase tracking-wider text-[#5A564E]">
+                Caption &amp; Photographic Notes
+              </label>
               <input
                 type="text"
-                placeholder="Write a caption..."
+                placeholder="Camera, film stock, location, or memory..."
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
-                className="w-full px-5 py-3.5 bg-zinc-50 border border-zinc-200 rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all placeholder:text-zinc-400"
+                className="w-full px-3.5 py-2.5 bg-white border border-[#D4D0C6] rounded-none text-sm font-mono text-[#181716] placeholder:text-[#9A968E] focus:outline-none focus:border-[#181716] transition-colors"
               />
-
-              <button
-                onClick={handlePostUpload}
-                disabled={!postFile || isUploadingPost}
-                className="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-base font-bold rounded-2xl transition shadow-sm active:scale-[0.99]"
-              >
-                {isUploadingPost ? "Uploading..." : "Upload Post"}
-              </button>
             </div>
-          </div>
-        </div>
 
-        {/* --- GALLERY SECTION --- */}
-        <div className="space-y-6">
-          <div className="flex items-center gap-3 border-b border-zinc-200 pb-4 px-2">
-            <h2 className="text-2xl font-bold text-zinc-900">Your Gallery</h2>
-            <span className="text-sm font-bold px-3 py-1 bg-zinc-100 text-zinc-600 rounded-full">
-              {photos.length}
-            </span>
-          </div>
-
-          {isLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <Skeleton key={i} className="aspect-square rounded-2xl" />
-              ))}
-            </div>
-          ) : photos.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-dashed border-zinc-300 text-center mx-2 sm:mx-0">
-              <p className="text-zinc-900 font-bold text-lg">No photos yet</p>
-              <p className="text-zinc-500 mt-1">Upload your first memory above.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-              {photos.map((p) => (
-                <div
-                  key={p.id}
-                  onClick={() => setSelectedPhoto(p)}
-                  className="group relative cursor-pointer bg-zinc-100 rounded-2xl overflow-hidden border border-zinc-200 shadow-sm hover:shadow-lg transition-all duration-300 aspect-square"
-                >
-                  <Image
-                    src={cldOptimized(p.imageUrl)}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    alt={p.caption ?? "photo"}
-                  />
-
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                  <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 hidden sm:block">
-                    <p className="text-white text-sm font-medium truncate">{p.caption || "No caption"}</p>
-                    <p className="text-white/80 text-[10px] mt-0.5">
-                      {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ""}
-                    </p>
-                  </div>
+            {/* Upload Progress Bar */}
+            {isUploadingPost && (
+              <div className="space-y-1.5 p-3 bg-[#F2EFE9] border border-[#DCD8CE]">
+                <div className="flex justify-between font-mono text-[10px] text-[#6C6860]">
+                  <span className="font-bold text-[#181716]">OPTIMIZING &amp; DISPATCHING TO ARCHIVE...</span>
+                  <span className="animate-pulse">PLEASE WAIT</span>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+                <div className="h-1.5 w-full bg-[#EAE7DF] overflow-hidden">
+                  <div className="h-full bg-[#181716] animate-[pulse_1s_ease-in-out_infinite] w-full" />
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={handlePostUpload}
+              disabled={!postFile || isUploadingPost}
+              className="w-full py-3 px-4 bg-[#181716] hover:bg-[#2C2A28] active:scale-[0.99] disabled:opacity-50 text-[#FAF9F6] font-mono text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+            >
+              {isUploadingPost ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>DISPATCHING TO CLOUD...</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>PUBLISH TO GALLERY</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Tab 2: Avatar */}
+        {activeTab === "avatar" && (
+          <div className="p-6 sm:p-8 space-y-5">
+            {!avatarPreview ? (
+              <label className="group flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-[#DCD8CE] hover:border-[#181716] bg-white cursor-pointer transition-colors p-4 text-center">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setAvatarFile(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+                <ImageIcon className="w-6 h-6 text-[#8C8880] group-hover:text-[#181716] mb-2 transition-colors" />
+                <p className="font-mono text-xs text-[#181716] font-semibold">
+                  Select new avatar
+                </p>
+                <p className="font-mono text-[10px] text-[#8C8880] mt-0.5">
+                  Recommended 400x400px
+                </p>
+              </label>
+            ) : (
+              /* Selected Avatar Preview Card */
+              <div className="bg-white border border-[#DCD8CE] p-4 flex flex-col sm:flex-row items-center gap-4">
+                <div className="relative w-20 h-20 rounded-full bg-[#EAE7DF] border-2 border-[#DCD8CE] overflow-hidden shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={avatarPreview}
+                    alt="Avatar preview"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                <div className="flex-1 min-w-0 text-center sm:text-left space-y-1">
+                  <div className="flex items-center justify-center sm:justify-start gap-1.5 font-mono text-[10px] text-[#1B5E20] font-bold">
+                    <FileCheck className="w-3.5 h-3.5" />
+                    <span>AVATAR ATTACHED</span>
+                  </div>
+                  <p className="font-mono text-xs font-bold text-[#181716] truncate">
+                    {avatarFile?.name}
+                  </p>
+                  <p className="font-mono text-[10px] text-[#8C8880]">
+                    {avatarFile ? formatFileSize(avatarFile.size) : ""} &bull; Ready to upload
+                  </p>
+                </div>
+
+                <div className="shrink-0 flex items-center gap-2">
+                  <label className="px-3 py-1.5 bg-[#F2EFE9] hover:bg-[#EAE7DF] border border-[#DCD8CE] text-[#181716] font-mono text-xs font-semibold cursor-pointer transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setAvatarFile(e.target.files?.[0] || null)}
+                      className="hidden"
+                    />
+                    Change
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setAvatarFile(null)}
+                    className="p-1.5 text-[#8C8880] hover:text-[#C62828] hover:bg-[#FEE2E2] transition-colors"
+                    title="Remove Avatar"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Avatar Progress Bar */}
+            {isUploadingAvatar && (
+              <div className="space-y-1.5 p-3 bg-[#F2EFE9] border border-[#DCD8CE]">
+                <div className="flex justify-between font-mono text-[10px] text-[#6C6860]">
+                  <span className="font-bold text-[#181716]">OPTIMIZING &amp; UPDATING PROFILE AVATAR...</span>
+                  <span className="animate-pulse">PLEASE WAIT</span>
+                </div>
+                <div className="h-1.5 w-full bg-[#EAE7DF] overflow-hidden">
+                  <div className="h-full bg-[#181716] animate-[pulse_1s_ease-in-out_infinite] w-full" />
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={handleAvatarUpload}
+              disabled={!avatarFile || isUploadingAvatar}
+              className="w-full py-3 px-4 bg-[#181716] hover:bg-[#2C2A28] active:scale-[0.99] disabled:opacity-50 text-[#FAF9F6] font-mono text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+            >
+              {isUploadingAvatar ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>UPDATING AVATAR...</span>
+                </>
+              ) : (
+                <span>SAVE NEW AVATAR</span>
+              )}
+            </button>
+          </div>
+        )}
       </div>
 
+      {/* ────────────────────────────────────────────────────────────
+          3. CREATOR GALLERY MATRIX
+          ──────────────────────────────────────────────────────────── */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between border-b border-[#E2DFD7] pb-3 px-1">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-[#181716]">
+              Your Archive Gallery
+            </h2>
+          </div>
+          <span className="font-mono text-xs font-bold px-2.5 py-1 bg-[#F2EFE9] border border-[#DCD8CE] text-[#181716]">
+            {photos.length} {photos.length === 1 ? "PRINT" : "PRINTS"}
+          </span>
+        </div>
+
+        {isLoading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="aspect-square bg-[#EAE7DF]" />
+            ))}
+          </div>
+        ) : photos.length === 0 ? (
+          <div className="bg-[#FAF9F6] border border-dashed border-[#DCD8CE] py-16 text-center space-y-2">
+            <Camera className="w-8 h-8 text-[#8C8880] mx-auto" />
+            <p className="font-mono text-xs uppercase tracking-wider font-bold text-[#181716]">
+              No photographs in archive yet
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {photos.map((p) => (
+              <div
+                key={p.id}
+                onClick={() => setSelectedPhoto(p)}
+                className="group relative cursor-pointer bg-[#EAE7DF] border border-[#DCD8CE] overflow-hidden aspect-square transition-all duration-300"
+              >
+                <Image
+                  src={cldOptimized(p.imageUrl)}
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  alt={p.caption ?? "Archival photo"}
+                />
+
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-between p-3 text-white">
+                  <div className="flex justify-end">
+                    <span className="font-mono text-[10px] bg-black/60 px-2 py-0.5 backdrop-blur-sm">
+                      VIEW
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    {p.caption && (
+                      <p className="text-xs font-mono line-clamp-2 leading-tight">
+                        {p.caption}
+                      </p>
+                    )}
+                    {p.createdAt && (
+                      <div className="flex items-center gap-1 text-[10px] font-mono text-white/80">
+                        <Calendar className="w-2.5 h-2.5" />
+                        <span>{new Date(p.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Lightbox Modal */}
       {selectedPhoto && (
         <PhotoLightbox
           photo={selectedPhoto}

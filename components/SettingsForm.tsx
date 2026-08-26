@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { PROFILE } from "@/lib/constants";
+import { User, Mail, ShieldCheck, Eye, EyeOff, Loader2 } from "lucide-react";
 
 type Props = {
   user: {
@@ -13,134 +15,213 @@ type Props = {
 };
 
 export default function SettingsForm({ user }: Props) {
+  const { update: updateSession } = useSession();
   const [username, setUsername] = useState(user.username);
-  const [email,] = useState(user.email);
+  const [email] = useState(user.email);
   const [bio, setBio] = useState(user.bio ?? "");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  async function handleSave() {
-    setLoading(true);
-
-    // Only send fields that can actually change (email is read-only here).
-    const res = await fetch("/api/settings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username,
-        bio,
-        ...(password ? { password } : {}),
-      }),
-    });
-
-    setLoading(false);
-
-    if (!res.ok) {
-      const data = await res.json().catch(() => null);
-      toast.error(data?.error || "Failed to update settings");
+  async function handleSave(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    if (password && !currentPassword) {
+      toast.error("Please enter your current password to set a new one");
       return;
     }
 
-    toast.success("Settings updated");
-    setPassword("");
+    setLoading(true);
+    const toastId = toast.loading("Saving account changes...");
+
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username,
+          bio,
+          ...(password ? { password, currentPassword } : {}),
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        toast.error(data?.error || "Failed to update settings", { id: toastId });
+        return;
+      }
+
+      // Sync the NextAuth session token immediately if username changed
+      if (username !== user.username) {
+        await updateSession?.({ username });
+      }
+
+      toast.success("Settings updated successfully.", { id: toastId });
+      setPassword("");
+      setCurrentPassword("");
+    } catch {
+      toast.error("Something went wrong updating settings.", { id: toastId });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm border border-zinc-200 p-6 sm:p-8 space-y-6">
-      
-      {/* Username Input */}
-      <div className="space-y-2">
-        <label className="text-sm font-semibold text-zinc-900 ml-1">Username</label>
-        <div className="relative group">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400 group-focus-within:text-zinc-800 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-              <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
-            </svg>
-          </div>
+    <form onSubmit={handleSave} className="space-y-6">
+      {/* ────────────────────────────────────────────────────────────
+          1. IDENTITY SECTION
+          ──────────────────────────────────────────────────────────── */}
+      <div className="bg-[#FAF9F6] border border-[#DCD8CE] p-6 shadow-sm space-y-4">
+        <div className="flex items-center gap-2 border-b border-[#EAE7DF] pb-3">
+          <User className="w-4 h-4 text-[#8C8880]" />
+          <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-[#181716]">
+            Creator Identity
+          </h2>
+        </div>
+
+        {/* Username */}
+        <div className="space-y-1">
+          <label className="block font-mono text-[11px] uppercase tracking-wider text-[#5A564E]">
+            Username Handle
+          </label>
           <input
+            type="text"
+            required
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-zinc-100 focus:border-zinc-400 transition-all text-sm sm:text-base text-zinc-900 font-medium"
+            className="w-full px-3.5 py-2.5 bg-white border border-[#D4D0C6] rounded-none text-sm font-mono text-[#181716] placeholder:text-[#9A968E] focus:outline-none focus:border-[#181716] transition-colors"
             placeholder="johndoe"
           />
         </div>
-      </div>
 
-      {/* Email Input */}
-      <div className="space-y-2">
-  <label className="text-sm font-semibold text-zinc-900 ml-1">Email</label>
-  <div className="relative group">
-    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-        <path d="M1.5 8.67v8.58a3 3 0 003 3h15a3 3 0 003-3V8.67l-8.928 5.493a3 3 0 01-3.144 0L1.5 8.67z" />
-        <path d="M22.5 6.908V6.75a3 3 0 00-3-3h-15a3 3 0 00-3 3v.158l9.714 5.978a1.5 1.5 0 001.572 0L22.5 6.908z" />
-      </svg>
-    </div>
-    <input
-      value={email}
-      readOnly
-      className="w-full pl-10 pr-4 py-3 bg-zinc-100 border border-zinc-200 rounded-xl focus:outline-none cursor-default text-sm sm:text-base text-zinc-500 font-medium"
-    />
-  </div>
-</div>
-
-      {/* Bio Input */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between ml-1">
-          <label className="text-sm font-semibold text-zinc-900">Bio</label>
-          <span className={`text-xs font-medium ${bio.length >= PROFILE.BIO_MAX_LENGTH ? 'text-red-500' : 'text-zinc-400'}`}>
-            {bio.length}/{PROFILE.BIO_MAX_LENGTH}
-          </span>
-        </div>
-        <textarea
-          maxLength={PROFILE.BIO_MAX_LENGTH}
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-          rows={3}
-          className="w-full p-4 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-zinc-100 focus:border-zinc-400 transition-all text-sm sm:text-base text-zinc-900 font-medium resize-none"
-          placeholder="Tell us a little about yourself..."
-        />
-      </div>
-
-      {/* Password Input */}
-      <div className="space-y-2 pt-2 border-t border-zinc-100">
-        <label className="text-sm font-semibold text-zinc-900 ml-1">New Password</label>
-        <div className="relative group">
-           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400 group-focus-within:text-zinc-800 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-              <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clipRule="evenodd" />
-            </svg>
+        {/* Email (Read Only) */}
+        <div className="space-y-1">
+          <label className="block font-mono text-[11px] uppercase tracking-wider text-[#5A564E]">
+            Registered Email
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#8C8880]">
+              <Mail className="w-4 h-4" />
+            </div>
+            <input
+              type="email"
+              disabled
+              value={email}
+              className="w-full pl-9 pr-3.5 py-2.5 bg-[#F2EFE9] border border-[#EAE7DF] rounded-none text-sm font-mono text-[#78746C] cursor-not-allowed opacity-80"
+            />
           </div>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Leave empty to keep current"
-            className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-zinc-100 focus:border-zinc-400 transition-all text-sm sm:text-base text-zinc-900 font-medium"
+        </div>
+
+        {/* Bio */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <label className="block font-mono text-[11px] uppercase tracking-wider text-[#5A564E]">
+              Creator Bio
+            </label>
+            <span
+              className={`text-[10px] font-mono ${
+                bio.length >= PROFILE.BIO_MAX_LENGTH ? "text-[#C62828]" : "text-[#8C8880]"
+              }`}
+            >
+              {bio.length} / {PROFILE.BIO_MAX_LENGTH}
+            </span>
+          </div>
+          <textarea
+            maxLength={PROFILE.BIO_MAX_LENGTH}
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            rows={3}
+            className="w-full p-3 bg-white border border-[#D4D0C6] rounded-none text-xs font-mono text-[#181716] placeholder:text-[#9A968E] focus:outline-none focus:border-[#181716] transition-colors resize-none"
+            placeholder="Tell us a little about your photography and stories..."
           />
         </div>
       </div>
 
-      {/* Save Button */}
-      <div className="pt-4">
-        <button
-          onClick={handleSave}
-          disabled={loading}
-          className="w-full bg-zinc-900 text-white py-3.5 rounded-xl font-bold hover:bg-black disabled:opacity-70 disabled:cursor-not-allowed transition-all shadow-sm active:scale-[0.99] flex items-center justify-center gap-2"
-        >
-          {loading ? (
-             <>
-               <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Saving...
-             </>
-          ) : (
-            "Save Changes"
-          )}
-        </button>
+      {/* ────────────────────────────────────────────────────────────
+          2. SECURITY & PASSWORD SECTION
+          ──────────────────────────────────────────────────────────── */}
+      <div className="bg-[#FAF9F6] border border-[#DCD8CE] p-6 shadow-sm space-y-4">
+        <div className="flex items-center gap-2 border-b border-[#EAE7DF] pb-3">
+          <ShieldCheck className="w-4 h-4 text-[#8C8880]" />
+          <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-[#181716]">
+            Password &amp; Security
+          </h2>
+        </div>
+
+        {/* Current Password */}
+        <div className="space-y-1">
+          <label className="block font-mono text-[11px] uppercase tracking-wider text-[#5A564E]">
+            Current Password
+          </label>
+          <div className="relative">
+            <input
+              type={showCurrentPassword ? "text" : "password"}
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Required when setting new password"
+              className="w-full pl-3.5 pr-10 py-2.5 bg-white border border-[#D4D0C6] rounded-none text-sm text-[#181716] placeholder:text-[#9A968E] focus:outline-none focus:border-[#181716] transition-colors"
+            />
+            <button
+              type="button"
+              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+              tabIndex={-1}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8C8880] hover:text-[#181716] p-1 transition-colors"
+            >
+              {showCurrentPassword ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* New Password */}
+        <div className="space-y-1">
+          <label className="block font-mono text-[11px] uppercase tracking-wider text-[#5A564E]">
+            New Password
+          </label>
+          <div className="relative">
+            <input
+              type={showNewPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Leave blank to keep unchanged"
+              className="w-full pl-3.5 pr-10 py-2.5 bg-white border border-[#D4D0C6] rounded-none text-sm text-[#181716] placeholder:text-[#9A968E] focus:outline-none focus:border-[#181716] transition-colors"
+            />
+            <button
+              type="button"
+              onClick={() => setShowNewPassword(!showNewPassword)}
+              tabIndex={-1}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8C8880] hover:text-[#181716] p-1 transition-colors"
+            >
+              {showNewPassword ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
+
+      {/* Submit Button */}
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full py-3.5 px-4 bg-[#181716] hover:bg-[#2C2A28] active:scale-[0.99] disabled:opacity-50 text-[#FAF9F6] font-mono text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm"
+      >
+        {loading ? (
+          <>
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <span>SAVING PREFERENCES...</span>
+          </>
+        ) : (
+          <span>SAVE ACCOUNT CHANGES &rarr;</span>
+        )}
+      </button>
+    </form>
   );
 }

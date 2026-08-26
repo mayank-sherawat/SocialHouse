@@ -35,17 +35,22 @@ export function useProfile(userId: string | undefined) {
 
   async function uploadAvatar(file: File): Promise<boolean> {
     setIsUploadingAvatar(true);
+    const toastId = toast.loading("Processing and updating avatar...");
     try {
       const formData = new FormData();
       formData.append("file", file);
       const res = await fetch("/api/profile/uploadImage", { method: "POST", body: formData });
       if (!res.ok) {
-        toast.error("Failed to update profile picture");
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error || "Failed to update profile picture", { id: toastId });
         return false;
       }
       await mutateMe();
-      toast.success("Profile picture updated");
+      toast.success("Profile avatar updated successfully.", { id: toastId });
       return true;
+    } catch {
+      toast.error("Network error updating avatar.", { id: toastId });
+      return false;
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -53,21 +58,26 @@ export function useProfile(userId: string | undefined) {
 
   async function uploadPost(file: File, caption: string): Promise<boolean> {
     setIsUploadingPost(true);
+    const toastId = toast.loading("Uploading and archiving photograph...");
     try {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("caption", caption);
       const res = await fetch("/api/cloudinary/upload", { method: "POST", body: formData });
       if (!res.ok) {
-        toast.error("Upload failed");
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error || "Upload failed. Please try again.", { id: toastId });
         return false;
       }
       const created = (await res.json()) as Omit<Photo, "likeCount" | "likedByMe">;
       const newPhoto: Photo = { ...created, likeCount: 0, likedByMe: false };
       // Prepend the new photo to the cache without a refetch.
       await mutatePhotos((prev = []) => [newPhoto, ...prev], { revalidate: false });
-      toast.success("Post uploaded");
+      toast.success("Photographic print published to gallery.", { id: toastId });
       return true;
+    } catch {
+      toast.error("Network error during upload.", { id: toastId });
+      return false;
     } finally {
       setIsUploadingPost(false);
     }
@@ -75,6 +85,7 @@ export function useProfile(userId: string | undefined) {
 
   async function deletePhoto(id: string): Promise<boolean> {
     setIsDeleting(true);
+    const toastId = toast.loading("Removing print from archive...");
     try {
       await mutatePhotos(
         async (prev = []) => {
@@ -88,10 +99,10 @@ export function useProfile(userId: string | undefined) {
           revalidate: false,
         }
       );
-      toast.success("Photo deleted");
+      toast.success("Photograph removed.", { id: toastId });
       return true;
     } catch {
-      toast.error("Failed to delete photo");
+      toast.error("Failed to delete photo.", { id: toastId });
       return false;
     } finally {
       setIsDeleting(false);
