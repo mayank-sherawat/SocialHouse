@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { resend, isEmailConfigured, EMAIL_FROM } from "@/lib/email";
+import { resend, isEmailConfigured, EMAIL_FROM, renderEmailTemplate } from "@/lib/email";
 import { apiSuccess, getClientIp, handleRoute, HttpError, parseBody } from "@/lib/api";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { generateOtp, hashOtp, otpExpiry } from "@/lib/otp";
@@ -44,16 +44,20 @@ export const POST = handleRoute(async (req: Request) => {
   ]);
 
   if (isEmailConfigured) {
+    const emailContent = renderEmailTemplate({
+      badge: "+ REGISTRATION DISPATCH • EMAIL VERIFICATION",
+      title: "Verify your email address",
+      description: "Welcome to SocialHouse. Enter this single-use code to verify your email address and activate your creator archive:",
+      code,
+      expiryMinutes: OTP.EXPIRY_MS / 60000,
+    });
+
     await resend.emails.send({
       from: EMAIL_FROM,
       to: email,
-      subject: "Verify your email",
-      html: `
-        <h2>Email Verification</h2>
-        <p>Your verification code is:</p>
-        <h1 style="letter-spacing: 5px;">${code}</h1>
-        <p>This code expires in ${OTP.EXPIRY_MS / 60000} minutes.</p>
-      `,
+      subject: `${code} is your SocialHouse verification code`,
+      html: emailContent.html,
+      text: emailContent.text,
     });
   } else {
     // No email provider configured (local dev): surface the code in server logs.

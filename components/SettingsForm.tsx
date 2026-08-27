@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { toast } from "sonner";
 import { PROFILE } from "@/lib/constants";
-import { User, Mail, ShieldCheck, Eye, EyeOff, Loader2 } from "lucide-react";
+import { User, Mail, ShieldCheck, Eye, EyeOff, Loader2, LogOut } from "lucide-react";
 
 type Props = {
   user: {
@@ -222,6 +222,21 @@ export default function SettingsForm({ user }: Props) {
           <span>SAVE ACCOUNT CHANGES &rarr;</span>
         )}
       </button>
+
+      {/* Session Management / Sign Out */}
+      <div className="pt-6 border-t border-[#E2DFD7] space-y-2">
+        <div className="font-mono text-[10px] uppercase tracking-wider text-[#8C8880]">
+          SESSION MANAGEMENT
+        </div>
+        <button
+          type="button"
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="w-full py-3 px-4 bg-[#F2EFE9] hover:bg-[#FEE2E2] text-[#8C8880] hover:text-[#DC2626] border border-[#DCD8CE] hover:border-[#FCA5A5] font-mono text-xs uppercase tracking-wider font-semibold transition-all flex items-center justify-center gap-2 active:scale-[0.99]"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          <span>SIGN OUT OF CURRENT SESSION</span>
+        </button>
+      </div>
     </form>
   );
 }

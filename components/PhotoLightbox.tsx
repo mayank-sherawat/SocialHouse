@@ -1,11 +1,13 @@
 "use client";
 
+import { useState, useRef } from "react";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 import type { Photo } from "@/types/models";
-import { cldOptimized } from "@/lib/cloudinary-url";
+import { cldOptimized, cldBlurPlaceholder } from "@/lib/cloudinary-url";
 import LikeButton from "@/components/LikeButton";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
-import { X, Trash2, User, Clock } from "lucide-react";
+import { X, Trash2, User, Clock, Heart } from "lucide-react";
 
 interface PhotoLightboxProps {
   photo: Photo;
@@ -28,7 +30,7 @@ function formatDateTime(dateString?: string) {
   });
 }
 
-/** Full-screen photo viewer with author details and owner-only delete action. */
+/** Full-screen photo viewer with author details, owner-only delete action, and double-tap to like. */
 export default function PhotoLightbox({
   photo,
   authorName,
@@ -41,6 +43,30 @@ export default function PhotoLightbox({
   onCancelDelete,
   onConfirmDelete,
 }: PhotoLightboxProps) {
+  const [showHeartBurst, setShowHeartBurst] = useState(false);
+  const lastTapRef = useRef<number>(0);
+
+  const triggerDoubleTapLike = () => {
+    setShowHeartBurst(true);
+    setTimeout(() => setShowHeartBurst(false), 900);
+
+    const btn = document.querySelector<HTMLButtonElement>(`[data-like-btn="${photo.id}"]`);
+    if (btn && !photo.likedByMe) {
+      btn.click();
+    }
+  };
+
+  const handleTouchEnd = () => {
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300;
+    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      triggerDoubleTapLike();
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-6 backdrop-blur-sm"
@@ -58,15 +84,38 @@ export default function PhotoLightbox({
         className="bg-[#FAF9F6] border border-[#DCD8CE] shadow-2xl w-full h-full sm:h-auto sm:max-w-5xl sm:max-h-[90vh] flex flex-col md:flex-row overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Image Area */}
-        <div className="relative w-full md:w-2/3 h-[50vh] md:h-auto bg-[#EAE7DF] flex items-center justify-center p-4 border-b md:border-b-0 md:border-r border-[#DCD8CE]">
+        {/* Image Area with Double Tap to Like */}
+        <div
+          onDoubleClick={triggerDoubleTapLike}
+          onTouchEnd={handleTouchEnd}
+          className="relative w-full md:w-2/3 h-[50vh] md:h-auto bg-[#EAE7DF] flex items-center justify-center p-4 border-b md:border-b-0 md:border-r border-[#DCD8CE] cursor-pointer select-none"
+        >
           <Image
             src={cldOptimized(photo.imageUrl)}
             alt="Enlarged view"
             width={1400}
             height={1400}
+            placeholder="blur"
+            blurDataURL={cldBlurPlaceholder(photo.imageUrl)}
             className="object-contain w-full h-full max-h-[80vh]"
           />
+
+          {/* Heart burst */}
+          <AnimatePresence>
+            {showHeartBurst && (
+              <motion.div
+                initial={{ scale: 0, opacity: 0, rotate: -15 }}
+                animate={{ scale: [0, 1.3, 1.15], opacity: [0, 1, 1], rotate: 0 }}
+                exit={{ scale: 1.5, opacity: 0, rotate: 15 }}
+                transition={{ duration: 0.65, ease: "easeOut" }}
+                className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
+              >
+                <div className="relative p-6 rounded-full bg-black/30 backdrop-blur-xs border border-white/20 shadow-2xl">
+                  <Heart className="w-20 h-20 text-[#DC2626] fill-[#DC2626] drop-shadow-[0_4px_12px_rgba(220,38,38,0.6)]" />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Details Area */}

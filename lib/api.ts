@@ -59,11 +59,14 @@ export async function parseBody<T>(req: Request, schema: z.ZodType<T>): Promise<
   return result.data;
 }
 
-/** Best-effort client IP from proxy headers (Vercel sets `x-forwarded-for`). */
+/** Best-effort client IP from trusted edge proxy headers. */
 export function getClientIp(req: Request): string {
+  const vercelIp = req.headers.get("x-vercel-ip") || req.headers.get("x-real-ip");
+  if (vercelIp) return vercelIp.trim();
+
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0].trim();
-  return req.headers.get("x-real-ip") ?? "unknown";
+  return "unknown";
 }
 
 /**

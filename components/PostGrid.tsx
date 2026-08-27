@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
-import { cldOptimized } from "@/lib/cloudinary-url";
+import { motion, AnimatePresence } from "framer-motion";
+import { cldOptimized, cldBlurPlaceholder } from "@/lib/cloudinary-url";
 import LikeButton from "@/components/LikeButton";
-import { X, Calendar } from "lucide-react";
+import { X, Calendar, Heart } from "lucide-react";
 
 interface Photo {
   id: string;
@@ -17,6 +18,30 @@ interface Photo {
 
 export default function PostGrid({ photos }: { photos: Photo[] }) {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const [showHeartBurst, setShowHeartBurst] = useState(false);
+  const lastTapRef = useRef<number>(0);
+
+  const triggerDoubleTapLike = () => {
+    if (!selectedPhoto) return;
+    setShowHeartBurst(true);
+    setTimeout(() => setShowHeartBurst(false), 900);
+
+    const btn = document.querySelector<HTMLButtonElement>(`[data-like-btn="${selectedPhoto.id}"]`);
+    if (btn && !selectedPhoto.likedByMe) {
+      btn.click();
+    }
+  };
+
+  const handleTouchEnd = () => {
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300;
+    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      triggerDoubleTapLike();
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+    }
+  };
 
   return (
     <>
@@ -32,6 +57,8 @@ export default function PostGrid({ photos }: { photos: Photo[] }) {
               src={cldOptimized(photo.imageUrl)}
               alt={photo.caption || "Gallery Print"}
               fill
+              placeholder="blur"
+              blurDataURL={cldBlurPlaceholder(photo.imageUrl)}
               sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
               className="object-cover group-hover:scale-105 transition-transform duration-500"
             />
@@ -81,14 +108,37 @@ export default function PostGrid({ photos }: { photos: Photo[] }) {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Image Area */}
-            <div className="relative w-full flex-1 min-h-[50vh] bg-[#EAE7DF] flex items-center justify-center p-3 border-b border-[#DCD8CE]">
+            <div
+              onDoubleClick={triggerDoubleTapLike}
+              onTouchEnd={handleTouchEnd}
+              className="relative w-full flex-1 min-h-[50vh] bg-[#EAE7DF] flex items-center justify-center p-3 border-b border-[#DCD8CE] cursor-pointer select-none"
+            >
               <Image
                 src={cldOptimized(selectedPhoto.imageUrl)}
                 alt="Enlarged view"
                 width={1200}
                 height={1200}
+                placeholder="blur"
+                blurDataURL={cldBlurPlaceholder(selectedPhoto.imageUrl)}
                 className="object-contain w-auto h-auto max-h-[65vh] sm:max-h-[75vh]"
               />
+
+              {/* Heart burst */}
+              <AnimatePresence>
+                {showHeartBurst && (
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0, rotate: -15 }}
+                    animate={{ scale: [0, 1.3, 1.15], opacity: [0, 1, 1], rotate: 0 }}
+                    exit={{ scale: 1.5, opacity: 0, rotate: 15 }}
+                    transition={{ duration: 0.65, ease: "easeOut" }}
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
+                  >
+                    <div className="relative p-6 rounded-full bg-black/30 backdrop-blur-xs border border-white/20 shadow-2xl">
+                      <Heart className="w-16 h-16 text-[#DC2626] fill-[#DC2626] drop-shadow-[0_4px_12px_rgba(220,38,38,0.6)]" />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Caption Area */}

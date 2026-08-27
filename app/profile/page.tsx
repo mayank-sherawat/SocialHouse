@@ -1,19 +1,18 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useState, useMemo } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
 import type { Photo } from "@/types/models";
 import PhotoLightbox from "@/components/PhotoLightbox";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { cldOptimized } from "@/lib/cloudinary-url";
+import { cldOptimized, cldBlurPlaceholder } from "@/lib/cloudinary-url";
 import { useProfile } from "./useProfile";
 import {
   Camera,
   Upload,
   User,
-  LogOut,
   Image as ImageIcon,
   Calendar,
   X,
@@ -150,17 +149,6 @@ export default function ProfilePage() {
                 </span>
               </div>
             </div>
-          </div>
-
-          {/* Sign Out Button */}
-          <div className="shrink-0 pt-2 sm:pt-0">
-            <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
-              className="px-4 py-2 bg-[#F2EFE9] hover:bg-[#EAE7DF] border border-[#DCD8CE] text-[#C62828] font-mono text-xs uppercase tracking-wider font-semibold transition-colors flex items-center gap-2"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>LOGOUT</span>
-            </button>
           </div>
         </div>
       </div>
@@ -445,6 +433,8 @@ export default function ProfilePage() {
                 <Image
                   src={cldOptimized(p.imageUrl)}
                   fill
+                  placeholder="blur"
+                  blurDataURL={cldBlurPlaceholder(p.imageUrl)}
                   sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                   alt={p.caption ?? "Archival photo"}

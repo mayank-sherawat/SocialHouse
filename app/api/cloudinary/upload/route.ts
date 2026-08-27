@@ -18,14 +18,26 @@ export const POST = handleRoute(async (req: Request) => {
     resource_type: "image",
   });
 
-  const photo = await prisma.photo.create({
-    data: {
-      imageUrl: uploadResult.secure_url,
-      publicId: uploadResult.public_id,
-      caption: caption.slice(0, PHOTO.CAPTION_MAX_LENGTH) || null,
-      userId: user.id,
-    },
-  });
+  try {
+    const photo = await prisma.photo.create({
+      data: {
+        imageUrl: uploadResult.secure_url,
+        publicId: uploadResult.public_id,
+        caption: caption.slice(0, PHOTO.CAPTION_MAX_LENGTH) || null,
+        userId: user.id,
+      },
+    });
 
-  return apiSuccess(photo, 201);
+    return apiSuccess(photo, 201);
+  } catch (err) {
+    // If database insertion fails, roll back Cloudinary asset to prevent orphaned storage
+    if (uploadResult.public_id) {
+      try {
+        await cloudinary.uploader.destroy(uploadResult.public_id);
+      } catch (destroyErr) {
+        console.error("Failed to clean up Cloudinary upload on DB error:", destroyErr);
+      }
+    }
+    throw err;
+  }
 });

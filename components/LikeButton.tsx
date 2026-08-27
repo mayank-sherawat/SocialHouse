@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Heart } from "lucide-react";
@@ -10,26 +10,38 @@ interface LikeButtonProps {
   initialLiked: boolean;
   initialCount: number;
   className?: string;
+  isLiked?: boolean;
+  onLikeChange?: (liked: boolean, count: number) => void;
 }
 
-/** Tactile heart toggle with optimistic update and micro-animation. */
+/** Tactile heart toggle with optimistic update, keyboard accessibility, and micro-animation. */
 export default function LikeButton({
   photoId,
   initialLiked,
   initialCount,
   className,
+  isLiked: controlledLiked,
+  onLikeChange,
 }: LikeButtonProps) {
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(initialCount);
   const [pending, setPending] = useState(false);
 
+  useEffect(() => {
+    if (controlledLiked !== undefined) {
+      setLiked(controlledLiked);
+    }
+  }, [controlledLiked]);
+
   const toggle = async () => {
     if (pending) return;
     const nextLiked = !liked;
+    const nextCount = Math.max(0, count + (nextLiked ? 1 : -1));
 
     // Optimistic update
     setLiked(nextLiked);
-    setCount((c) => Math.max(0, c + (nextLiked ? 1 : -1)));
+    setCount(nextCount);
+    if (onLikeChange) onLikeChange(nextLiked, nextCount);
     setPending(true);
 
     try {
@@ -40,10 +52,14 @@ export default function LikeButton({
       const data = (await res.json()) as { liked: boolean; count: number };
       setLiked(data.liked);
       setCount(data.count);
+      if (onLikeChange) onLikeChange(data.liked, data.count);
     } catch {
       // Roll back
-      setLiked(!nextLiked);
-      setCount((c) => Math.max(0, c + (nextLiked ? -1 : 1)));
+      const rollLiked = !nextLiked;
+      const rollCount = Math.max(0, count);
+      setLiked(rollLiked);
+      setCount(rollCount);
+      if (onLikeChange) onLikeChange(rollLiked, rollCount);
       toast.error("Couldn't update reaction");
     } finally {
       setPending(false);
@@ -54,10 +70,11 @@ export default function LikeButton({
     <button
       type="button"
       onClick={toggle}
+      data-like-btn={photoId}
       aria-pressed={liked}
       aria-label={liked ? "Unlike" : "Like"}
       className={cn(
-        "group inline-flex items-center gap-1.5 text-xs font-mono tracking-wider transition-all duration-200 active:scale-90",
+        "group inline-flex items-center gap-1.5 text-xs font-mono tracking-wider transition-all duration-200 active:scale-90 select-none",
         liked
           ? "text-[#DC2626] font-bold"
           : "text-[#6C6860] hover:text-[#181716]",

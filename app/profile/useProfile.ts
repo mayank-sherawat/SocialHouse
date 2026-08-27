@@ -73,6 +73,7 @@ export function useProfile(userId: string | undefined) {
       const newPhoto: Photo = { ...created, likeCount: 0, likedByMe: false };
       // Prepend the new photo to the cache without a refetch.
       await mutatePhotos((prev = []) => [newPhoto, ...prev], { revalidate: false });
+      await mutateMe();
       toast.success("Photographic print published to gallery.", { id: toastId });
       return true;
     } catch {
@@ -99,6 +100,7 @@ export function useProfile(userId: string | undefined) {
           revalidate: false,
         }
       );
+      await mutateMe();
       toast.success("Photograph removed.", { id: toastId });
       return true;
     } catch {

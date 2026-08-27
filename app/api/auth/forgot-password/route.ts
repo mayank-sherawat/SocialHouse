@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { resend, isEmailConfigured, EMAIL_FROM } from "@/lib/email";
+import { resend, isEmailConfigured, EMAIL_FROM, renderEmailTemplate } from "@/lib/email";
 import { apiSuccess, getClientIp, handleRoute, HttpError, parseBody } from "@/lib/api";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { generateOtp, hashOtp, otpExpiry } from "@/lib/otp";
@@ -37,16 +37,20 @@ export const POST = handleRoute(async (req: Request) => {
     ]);
 
     if (isEmailConfigured) {
+      const emailContent = renderEmailTemplate({
+        badge: "+ RECOVERY DISPATCH • CREDENTIAL RESET",
+        title: "Reset your password",
+        description: "A request was received to reset the password for your SocialHouse account. Use this single-use code to proceed:",
+        code,
+        expiryMinutes: OTP.EXPIRY_MS / 60000,
+      });
+
       await resend.emails.send({
         from: EMAIL_FROM,
         to: email,
-        subject: "Reset your password",
-        html: `
-          <h2>Password Reset</h2>
-          <p>Use this code to reset your password:</p>
-          <h1 style="letter-spacing: 5px;">${code}</h1>
-          <p>This code expires in ${OTP.EXPIRY_MS / 60000} minutes. If you didn't request this, you can ignore this email.</p>
-        `,
+        subject: `${code} is your SocialHouse recovery code`,
+        html: emailContent.html,
+        text: emailContent.text,
       });
     } else {
       console.warn(`[forgot-password] Email not configured. Code for ${email}: ${code}`);

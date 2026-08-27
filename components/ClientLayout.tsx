@@ -3,12 +3,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import logoImg from "@/public/logo.png";
+import KeyboardShortcuts from "@/components/KeyboardShortcuts";
 import {
   Compass,
   Search,
   User,
   Settings,
+  LogOut,
 } from "lucide-react";
 
 interface NavLinkProps {
@@ -33,11 +36,15 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="min-h-screen bg-[#FAF9F6] text-[#181716] antialiased selection:bg-[#181716] selection:text-[#FAF9F6]">
+      {/* Global Desktop Keyboard Shortcuts */}
+      <KeyboardShortcuts />
+
       {/* ────────────────────────────────────────────────────────────
           MOBILE TOP HEADER (Light Editorial)
           ──────────────────────────────────────────────────────────── */}
       <header className="fixed top-0 left-0 right-0 z-40 md:hidden bg-[#FAF9F6]/95 backdrop-blur-md border-b border-[#E2DFD7]">
-        <div className="px-4 h-16 flex items-center justify-center">
+        <div className="px-4 h-16 flex items-center justify-between">
+          <div className="w-8" />
           <Link href="/feed" className="flex items-center justify-center group py-1">
             <Image
               src={logoImg}
@@ -46,6 +53,14 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
               priority
             />
           </Link>
+          <button
+            type="button"
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="w-8 h-8 flex items-center justify-center text-[#8C8880] hover:text-[#DC2626] active:scale-90 transition-all"
+            title="Sign Out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </header>
 
@@ -110,10 +125,23 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           </div>
         </div>
 
-        {/* Colophon Footer */}
-        <div className="p-5 border-t border-[#E2DFD7] text-[10px] font-mono text-[#8C8880] space-y-1">
-          <div className="text-[#181716] font-semibold">ISSUE 04 &bull; 2025</div>
-          <div>CURATED &bull; AD-FREE</div>
+        {/* Colophon Footer with Logout */}
+        <div className="p-4 border-t border-[#E2DFD7] text-[10px] font-mono text-[#8C8880] space-y-3">
+          <button
+            type="button"
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="w-full flex items-center justify-between px-3 py-2 text-xs font-mono text-[#6C6860] hover:text-[#DC2626] bg-[#FAF9F6]/80 hover:bg-[#FEE2E2]/60 border border-[#DCD8CE] hover:border-[#FCA5A5] transition-all active:scale-[0.98] group"
+          >
+            <span className="font-semibold uppercase tracking-wider group-hover:text-[#DC2626]">
+              SIGN OUT
+            </span>
+            <LogOut className="w-3.5 h-3.5 text-[#8C8880] group-hover:text-[#DC2626] transition-colors" />
+          </button>
+
+          <div className="flex items-center justify-between text-[9px] text-[#8C8880] pt-1">
+            <span>ISSUE 04 &bull; 2026</span>
+            <span>CURATED &bull; AD-FREE</span>
+          </div>
         </div>
       </aside>
 

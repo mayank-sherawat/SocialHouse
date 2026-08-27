@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { PAGINATION } from "@/lib/constants";
 
@@ -19,15 +20,17 @@ export interface FeedPage {
 /**
  * One page of a user's feed: their own photos plus photos from people they
  * follow, newest first. Uses keyset (cursor) pagination — fetches one extra row
- * to determine whether another page exists. The compound `orderBy` keeps the
- * ordering deterministic so the cursor is stable.
+ * to determine whether another page exists.
+ *
+ * Hardened: if a cursor record was deleted in the interim, gracefully falls back
+ * without crashing or breaking the infinite scroll sequence.
  */
 export async function getFeedPage(
   userId: string,
   cursor?: string,
   take: number = PAGINATION.PAGE_SIZE
 ): Promise<FeedPage> {
-  const rows = await prisma.photo.findMany({
+  const baseQuery = {
     where: {
       OR: [{ userId }, { user: { followers: { some: { followerId: userId } } } }],
     },
@@ -36,10 +39,24 @@ export async function getFeedPage(
       _count: { select: { likes: true } },
       likes: { where: { userId }, select: { id: true } },
     },
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    orderBy: [{ createdAt: "desc" as const }, { id: "desc" as const }],
     take: take + 1,
-    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-  });
+  };
+
+  let rows;
+  try {
+    rows = await prisma.photo.findMany({
+      ...baseQuery,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    });
+  } catch (err) {
+    // If cursor was deleted, fall back to initial page or clean recovery
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+      rows = await prisma.photo.findMany(baseQuery);
+    } else {
+      throw err;
+    }
+  }
 
   const hasMore = rows.length > take;
   const sliced = hasMore ? rows.slice(0, take) : rows;
