@@ -10,7 +10,7 @@ import type { NextConfig } from "next";
  */
 const contentSecurityPolicy = [
   "default-src 'self'",
-  "img-src 'self' https://res.cloudinary.com data: blob:",
+  "img-src 'self' https://res.cloudinary.com https://vercel.live https://vercel.com data: blob:",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://vercel.live",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data: https://vercel.live https://assets.vercel.com",
