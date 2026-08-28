@@ -2,11 +2,24 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Loader2, AlertCircle } from "lucide-react";
 import logoImg from "@/public/logo.png";
+
+function formatAuthError(error?: string | null): string {
+  if (!error) return "Invalid email or password. Please try again.";
+  if (error === "CredentialsSignin") {
+    return "Invalid email or password. Please check your credentials.";
+  }
+  if (error === "SessionRequired") {
+    return "Please sign in to access this page.";
+  }
+  if (error === "OAuthAccountNotLinked") {
+    return "An account with this email already exists with another provider.";
+  }
+  return error;
+}
 
 export default function LoginPage() {
   const [form, setForm] = useState({
@@ -16,9 +29,22 @@ export default function LoginPage() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlError = params.get("error");
+      if (urlError) {
+        setErrorMessage(formatAuthError(urlError));
+      }
+    }
+  }, []);
 
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    setErrorMessage(null);
+
     if (!form.email || !form.password) {
       toast.error("Please enter both your email and password.");
       return;
@@ -38,13 +64,17 @@ export default function LoginPage() {
         const target = params.get("callbackUrl") || "/feed";
         window.location.href = target;
       } else {
-        toast.error(res?.error || "Invalid email or password.");
+        const friendly = formatAuthError(res?.error);
+        setErrorMessage(friendly);
+        toast.error(friendly);
         setLoading(false);
       }
     } catch (error) {
       console.error(error);
       setLoading(false);
-      toast.error("An unexpected error occurred. Please try again.");
+      const msg = "An unexpected error occurred. Please try again.";
+      setErrorMessage(msg);
+      toast.error(msg);
     }
   };
 
@@ -149,6 +179,14 @@ export default function LoginPage() {
               </p>
             </div>
 
+            {/* Error Banner */}
+            {errorMessage && (
+              <div className="p-3 bg-[#FEF2F2] border border-[#FCA5A5] text-[#991B1B] text-xs font-mono flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[#DC2626]" />
+                <div className="flex-1 leading-snug">{errorMessage}</div>
+              </div>
+            )}
+
             {/* Form */}
             <form onSubmit={handleLogin} className="space-y-4">
               {/* Email Address */}
@@ -162,9 +200,10 @@ export default function LoginPage() {
                   autoComplete="email"
                   placeholder="name@domain.com"
                   value={form.email}
-                  onChange={(e) =>
-                    setForm({ ...form, email: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setErrorMessage(null);
+                    setForm({ ...form, email: e.target.value });
+                  }}
                   className="w-full px-3.5 py-2.5 bg-white border border-[#D4D0C6] rounded-none text-sm text-[#181716] placeholder:text-[#9A968E] focus:outline-none focus:border-[#181716] transition-colors"
                 />
               </div>
@@ -189,9 +228,10 @@ export default function LoginPage() {
                     autoComplete="current-password"
                     placeholder="••••••••"
                     value={form.password}
-                    onChange={(e) =>
-                      setForm({ ...form, password: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setErrorMessage(null);
+                      setForm({ ...form, password: e.target.value });
+                    }}
                     className="w-full pl-3.5 pr-10 py-2.5 bg-white border border-[#D4D0C6] rounded-none text-sm text-[#181716] placeholder:text-[#9A968E] focus:outline-none focus:border-[#181716] transition-colors"
                   />
                   <button
