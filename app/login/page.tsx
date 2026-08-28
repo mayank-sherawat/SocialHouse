@@ -47,7 +47,7 @@ export default function LoginPage() {
     setErrorMessage(null);
 
     if (!form.email || !form.password) {
-      toast.error("Please enter both your email and password.");
+      setErrorMessage("Please enter both your email and password.");
       return;
     }
 
@@ -67,15 +67,12 @@ export default function LoginPage() {
       } else {
         const friendly = formatAuthError(res?.error);
         setErrorMessage(friendly);
-        toast.error(friendly);
         setLoading(false);
       }
     } catch (error) {
       console.error(error);
       setLoading(false);
-      const msg = "An unexpected error occurred. Please try again.";
-      setErrorMessage(msg);
-      toast.error(msg);
+      setErrorMessage("An unexpected error occurred. Please try again.");
     }
   };
 
